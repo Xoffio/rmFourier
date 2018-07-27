@@ -1,6 +1,8 @@
 #include "rmFourier.h"
+#include "FftComplex.hpp"
 #include "math.h"
 #include <vector>
+#include <cmath>
 
 static PF_Err 
 About (	
@@ -59,6 +61,43 @@ ParamsSetup (
 	out_data->num_params = RMFOURIER_NUM_PARAMS;
 
 	return err;
+}
+
+static PF_PixelFloat
+*getXY(PF_EffectWorld &def, int x, int y) {
+	return (PF_PixelFloat*)((char*)def.data +
+		(y * def.rowbytes) +
+		(x * sizeof(PF_PixelFloat)));
+
+}
+
+PF_EffectWorld tmpFourier(PF_EffectWorld inWorld) {
+	std::vector<std::complex<double>> imgRedDataVector, imgGreenDataVector, imgBlueDataVector;
+	int imgArraySize = inWorld.height * inWorld.width;
+
+	// Convert the raw images to vectors
+	PF_PixelFloat* pixelPointerAtIndex;
+	for (int index= 0; index < imgArraySize; index++){
+		pixelPointerAtIndex = (PF_PixelFloat*)((char*)inWorld.data + (index * sizeof(PF_PixelFloat)));
+		imgRedDataVector.push_back( (std::complex<double>) pixelPointerAtIndex->red);
+		imgGreenDataVector.push_back((std::complex<double>) pixelPointerAtIndex->green);
+		imgBlueDataVector.push_back((std::complex<double>) pixelPointerAtIndex->blue);
+	}
+
+	// Fourier Transform
+	fft::transform(imgRedDataVector);
+	fft::transform(imgGreenDataVector);
+	fft::transform(imgBlueDataVector);
+
+	// Copy the Fourier data back to the image
+	for (int index = 0; index < imgArraySize; index++) {
+		pixelPointerAtIndex = (PF_PixelFloat*)((char*)inWorld.data + (index * sizeof(PF_PixelFloat)));
+		pixelPointerAtIndex->red = imgRedDataVector[index].real() ;
+		pixelPointerAtIndex->green = imgGreenDataVector[index].real();
+		pixelPointerAtIndex->blue = imgBlueDataVector[index].real();
+	}
+
+	return(inWorld);
 }
 
 static PF_Err
@@ -217,14 +256,15 @@ SmartRender(
 					switch (format) {
 
 					case PF_PixelFormat_ARGB128:
-						ERR(suites.IterateFloatSuite1()->iterate(in_data,
+						*output_worldP = tmpFourier(*input_worldP);
+						/*ERR(suites.IterateFloatSuite1()->iterate(in_data,
 							0,                        // progress base
 							output_worldP->height,    // progress final
 							input_worldP,             // src
 							NULL,                     // area - null for all pixels
 							(void*)infoP,              // custom data pointer
 							fourier32,        // pixel function pointer
-							output_worldP));
+							output_worldP));*/
 						break;
 
 					case PF_PixelFormat_ARGB64:

@@ -347,7 +347,6 @@ cl /D "MSWindows" /EP $(IntDir)%(Filename).rrc &gt;               "$(ProjectDir)
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Util\AEFX_SuiteHelper.h" />
-    <ClInclude Include="..\rmFourier.h" />
     <ClInclude Include="..\..\..\Headers\A.h" />
     <ClInclude Include="..\..\..\Headers\AE_Effect.h" />
     <ClInclude Include="..\..\..\Headers\AE_EffectCB.h" />
@@ -366,12 +365,15 @@ cl /D "MSWindows" /EP $(IntDir)%(Filename).rrc &gt;               "$(ProjectDir)
     <ClInclude Include="..\..\..\Util\Param_Utils.h" />
     <ClInclude Include="..\..\..\Headers\PF_Masks.h" />
     <ClInclude Include="..\..\..\Util\String_Utils.h" />
+    <ClInclude Include="..\FftComplex.hpp" />
+    <ClInclude Include="..\rmFourier.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\Util\AEFX_SuiteHelper.c" />
     <ClCompile Include="..\..\..\Util\AEGP_SuiteHandler.cpp" />
     <ClCompile Include="..\..\..\Util\MissingSuiteError.cpp" />
     <ClCompile Include="..\..\..\Util\Smart_Utils.cpp" />
+    <ClCompile Include="..\FftComplex.cpp" />
     <ClCompile Include="..\rmFourier.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

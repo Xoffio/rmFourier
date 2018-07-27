@@ -81,6 +81,9 @@
     <ClInclude Include="..\rmFourier.h">
       <Filter>Headers</Filter>
     </ClInclude>
+    <ClInclude Include="..\FftComplex.hpp">
+      <Filter>Headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\Util\AEGP_SuiteHandler.cpp">
@@ -96,6 +99,7 @@
       <Filter>Supporting code</Filter>
     </ClCompile>
     <ClCompile Include="..\rmFourier.cpp" />
+    <ClCompile Include="..\FftComplex.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\SkeletonPiPL.r">

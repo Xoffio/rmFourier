@@ -65,6 +65,7 @@ typedef struct {
 	PF_SampPB	samp_pb;
 	PF_InData	in_data;
 	PF_Boolean	no_opB;
+	PF_EffectWorld tmpOutput;
 } rmFourierInfo;
 
 #ifdef __cplusplus
