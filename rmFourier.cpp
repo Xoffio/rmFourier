@@ -72,30 +72,128 @@ static PF_PixelFloat
 }
 
 PF_EffectWorld tmpFourier(PF_EffectWorld inWorld) {
-	std::vector<std::complex<double>> imgRedDataVector, imgGreenDataVector, imgBlueDataVector;
+	std::vector<std::complex<double>>	imgRedDataVector, imgGreenDataVector, imgBlueDataVector,
+										finalImgRedDataVector, finalImgGreenDataVector, finalImgBlueDataVector;
+	std::vector<std::vector<std::complex<double>>> rImgMatrix, gImgMatrix, bImgMatrix;
 	int imgArraySize = inWorld.height * inWorld.width;
 
 	// Convert the raw images to vectors
 	PF_PixelFloat* pixelPointerAtIndex;
-	for (int index= 0; index < imgArraySize; index++){
+	for (unsigned long index= 0; index < imgArraySize; index++){
 		pixelPointerAtIndex = (PF_PixelFloat*)((char*)inWorld.data + (index * sizeof(PF_PixelFloat)));
 		imgRedDataVector.push_back( (std::complex<double>) pixelPointerAtIndex->red);
 		imgGreenDataVector.push_back((std::complex<double>) pixelPointerAtIndex->green);
 		imgBlueDataVector.push_back((std::complex<double>) pixelPointerAtIndex->blue);
 	}
 
+	// Transform rows
+	/*for (int row = 0; row < inWorld.height; row++) {
+		std::vector<std::complex<double>> tmpRedVector, tmpGreenVector, tmpBlueVector;
+
+		tmpRedVector.clear();
+		tmpGreenVector.clear();
+		tmpBlueVector.clear();
+
+		for (int col = 0; col < inWorld.width; col++) {
+			unsigned long pointAt = (row * inWorld.width) + col;
+			pixelPointerAtIndex = (PF_PixelFloat*)((char*)inWorld.data + ( pointAt * sizeof(PF_PixelFloat)));
+
+			tmpRedVector.push_back((std::complex<double>) pixelPointerAtIndex->red);
+			tmpGreenVector.push_back((std::complex<double>) pixelPointerAtIndex->green);
+			tmpBlueVector.push_back((std::complex<double>) pixelPointerAtIndex->blue);
+
+			finalImgRedDataVector.push_back(0);
+			finalImgGreenDataVector.push_back(0);
+			finalImgBlueDataVector.push_back(0);
+		}
+
+		// Fourier Transform Row
+		fft::transform(tmpRedVector);
+		fft::transform(tmpGreenVector);
+		fft::transform(tmpBlueVector);
+		
+		imgRedDataVector.insert(std::end(imgRedDataVector), std::begin(tmpRedVector), std::end(tmpRedVector));
+		imgGreenDataVector.insert(std::end(imgGreenDataVector), std::begin(tmpGreenVector), std::end(tmpGreenVector));
+		imgBlueDataVector.insert(std::end(imgBlueDataVector), std::begin(tmpBlueVector), std::end(tmpBlueVector));
+	}
+
+	// Transform Columns
+	for (int col = 0; col < inWorld.width; col++) {
+		std::vector<std::complex<double>> tmpRedVector, tmpGreenVector, tmpBlueVector;
+
+		tmpRedVector.clear();
+		tmpGreenVector.clear();
+		tmpBlueVector.clear();
+
+		for (int row = 0; row < inWorld.height; row++) {
+			unsigned long pointAt = (row * inWorld.width) + col;
+
+			tmpRedVector.push_back(imgRedDataVector[pointAt]);
+			tmpGreenVector.push_back(imgGreenDataVector[pointAt]);
+			tmpBlueVector.push_back(imgBlueDataVector[pointAt]);
+		}
+
+		// Fourier Transform Row
+		fft::transform(tmpRedVector);
+		fft::transform(tmpGreenVector);
+		fft::transform(tmpBlueVector);
+
+		for (int row = 0; row < inWorld.height; row++) {
+			unsigned long pointAt = (row * inWorld.width) + col;
+
+			finalImgRedDataVector[pointAt] = tmpRedVector[row];
+			finalImgGreenDataVector[pointAt] = tmpGreenVector[row];
+			finalImgBlueDataVector[pointAt] = tmpBlueVector[row];
+		}
+	}*/
+
 	// Fourier Transform
 	fft::transform(imgRedDataVector);
 	fft::transform(imgGreenDataVector);
 	fft::transform(imgBlueDataVector);
 
-	// Copy the Fourier data back to the image
-	for (int index = 0; index < imgArraySize; index++) {
+	// Math.sqrt( Math.pow( re.data[i], 2 ) + Math.pow( im.data[i], 2 ) );
+	/*for (int index = 0; index < imgArraySize; index++) {
 		pixelPointerAtIndex = (PF_PixelFloat*)((char*)inWorld.data + (index * sizeof(PF_PixelFloat)));
-		pixelPointerAtIndex->red = imgRedDataVector[index].real() ;
-		pixelPointerAtIndex->green = imgGreenDataVector[index].real();
-		pixelPointerAtIndex->blue = imgBlueDataVector[index].real();
+		pixelPointerAtIndex->red = sqrt(pow(imgRedDataVector[index].real(), 2) + pow(imgRedDataVector[index].imag(), 2));
+		pixelPointerAtIndex->green = sqrt(pow(imgGreenDataVector[index].real(), 2) + pow(imgGreenDataVector[index].imag(), 2));
+		pixelPointerAtIndex->blue = sqrt(pow(imgBlueDataVector[index].real(), 2) + pow(imgBlueDataVector[index].imag(), 2));
+	}*/
+
+	// Math.log( 1 + data[i] );
+
+	// Copy the Fourier data back to the image
+	for (unsigned long index = 0; index < imgArraySize; index++) {
+		pixelPointerAtIndex = (PF_PixelFloat*)((char*)inWorld.data + (index * sizeof(PF_PixelFloat)));
+		pixelPointerAtIndex->red	= sqrt(pow(imgRedDataVector[index].real(), 2) + pow(imgRedDataVector[index].imag(), 2));
+		pixelPointerAtIndex->green	= std::abs( imgGreenDataVector[index] );
+		pixelPointerAtIndex->blue	= abs( log( 1.0 + imgBlueDataVector[index]) );
 	}
+
+	// Get max value
+	double rMaxVal = 0; 
+	double gMaxVal = 0;
+	double bMaxVal = 0;
+	for (unsigned long index = 0; index < imgArraySize; index++) {
+		pixelPointerAtIndex = (PF_PixelFloat*)((char*)inWorld.data + (index * sizeof(PF_PixelFloat)));
+		if (pixelPointerAtIndex->red > rMaxVal) rMaxVal = pixelPointerAtIndex->red;
+		if (pixelPointerAtIndex->green > gMaxVal) gMaxVal = pixelPointerAtIndex->green;
+		if (pixelPointerAtIndex->blue > bMaxVal) bMaxVal = pixelPointerAtIndex->blue;
+	}
+
+	for (unsigned long index = 0; index < imgArraySize; index++) {
+		pixelPointerAtIndex = (PF_PixelFloat*)((char*)inWorld.data + (index * sizeof(PF_PixelFloat)));
+		pixelPointerAtIndex->red = pixelPointerAtIndex->red / rMaxVal;
+		pixelPointerAtIndex->green = pixelPointerAtIndex->green / gMaxVal;
+		pixelPointerAtIndex->blue = pixelPointerAtIndex->blue / bMaxVal;
+	}
+
+	/*for (int index = 0; index < imgArraySize; index++) {
+		pixelPointerAtIndex = (PF_PixelFloat*)((char*)inWorld.data + (index * sizeof(PF_PixelFloat)));
+		pixelPointerAtIndex->red	=	log(1 + pixelPointerAtIndex->red);
+		pixelPointerAtIndex->green	=	log(1 + pixelPointerAtIndex->green);
+		pixelPointerAtIndex->blue	=	log(1 + pixelPointerAtIndex->blue);
+	}*/
 
 	return(inWorld);
 }
