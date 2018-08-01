@@ -72,9 +72,8 @@ static PF_PixelFloat
 }
 
 PF_EffectWorld tmpFourier(PF_EffectWorld inWorld) {
-	std::vector<std::complex<double>>	imgRedDataVector, imgGreenDataVector, imgBlueDataVector,
-										finalImgRedDataVector, finalImgGreenDataVector, finalImgBlueDataVector;
-	std::vector<std::vector<std::complex<double>>> rImgMatrix, gImgMatrix, bImgMatrix;
+	std::vector<std::complex<double>>	imgRedDataVector, imgGreenDataVector, imgBlueDataVector;
+	std::vector<double>					copyImgRedDataVector, copyImgGreenDataVector, copyImgBlueDataVector;
 	int imgArraySize = inWorld.height * inWorld.width;
 
 	// Convert the raw images to vectors
@@ -86,76 +85,15 @@ PF_EffectWorld tmpFourier(PF_EffectWorld inWorld) {
 		imgBlueDataVector.push_back((std::complex<double>) pixelPointerAtIndex->blue);
 	}
 
-	// Transform rows
-	/*for (int row = 0; row < inWorld.height; row++) {
-		std::vector<std::complex<double>> tmpRedVector, tmpGreenVector, tmpBlueVector;
-
-		tmpRedVector.clear();
-		tmpGreenVector.clear();
-		tmpBlueVector.clear();
-
-		for (int col = 0; col < inWorld.width; col++) {
-			unsigned long pointAt = (row * inWorld.width) + col;
-			pixelPointerAtIndex = (PF_PixelFloat*)((char*)inWorld.data + ( pointAt * sizeof(PF_PixelFloat)));
-
-			tmpRedVector.push_back((std::complex<double>) pixelPointerAtIndex->red);
-			tmpGreenVector.push_back((std::complex<double>) pixelPointerAtIndex->green);
-			tmpBlueVector.push_back((std::complex<double>) pixelPointerAtIndex->blue);
-
-			finalImgRedDataVector.push_back(0);
-			finalImgGreenDataVector.push_back(0);
-			finalImgBlueDataVector.push_back(0);
-		}
-
-		// Fourier Transform Row
-		fft::transform(tmpRedVector);
-		fft::transform(tmpGreenVector);
-		fft::transform(tmpBlueVector);
-		
-		imgRedDataVector.insert(std::end(imgRedDataVector), std::begin(tmpRedVector), std::end(tmpRedVector));
-		imgGreenDataVector.insert(std::end(imgGreenDataVector), std::begin(tmpGreenVector), std::end(tmpGreenVector));
-		imgBlueDataVector.insert(std::end(imgBlueDataVector), std::begin(tmpBlueVector), std::end(tmpBlueVector));
-	}
-
-	// Transform Columns
-	for (int col = 0; col < inWorld.width; col++) {
-		std::vector<std::complex<double>> tmpRedVector, tmpGreenVector, tmpBlueVector;
-
-		tmpRedVector.clear();
-		tmpGreenVector.clear();
-		tmpBlueVector.clear();
-
-		for (int row = 0; row < inWorld.height; row++) {
-			unsigned long pointAt = (row * inWorld.width) + col;
-
-			tmpRedVector.push_back(imgRedDataVector[pointAt]);
-			tmpGreenVector.push_back(imgGreenDataVector[pointAt]);
-			tmpBlueVector.push_back(imgBlueDataVector[pointAt]);
-		}
-
-		// Fourier Transform Row
-		fft::transform(tmpRedVector);
-		fft::transform(tmpGreenVector);
-		fft::transform(tmpBlueVector);
-
-		for (int row = 0; row < inWorld.height; row++) {
-			unsigned long pointAt = (row * inWorld.width) + col;
-
-			finalImgRedDataVector[pointAt] = tmpRedVector[row];
-			finalImgGreenDataVector[pointAt] = tmpGreenVector[row];
-			finalImgBlueDataVector[pointAt] = tmpBlueVector[row];
-		}
-	}*/
-
-	// Fourier Transform
+	// Fourier Transform vectors
 	fft::transform(imgRedDataVector);
 	fft::transform(imgGreenDataVector);
 	fft::transform(imgBlueDataVector);
 
-	// Copy the Fourier data back to the image
+	// Copy the Fourier data from the vectors back to the image
 	for (unsigned long index = 0; index < imgArraySize; index++) {
 		pixelPointerAtIndex = (PF_PixelFloat*)((char*)inWorld.data + (index * sizeof(PF_PixelFloat)));
-		pixelPointerAtIndex->red	= sqrt(pow(imgRedDataVector[index].real(), 2) + pow(imgRedDataVector[index].imag(), 2));
+		pixelPointerAtIndex->red	= abs( log(1.0 + imgRedDataVector[index]));
 		pixelPointerAtIndex->green	= abs( log(1.0 + imgGreenDataVector[index]) );
 		pixelPointerAtIndex->blue	= abs( log(1.0 + imgBlueDataVector[index]) );
 	}
@@ -177,48 +115,41 @@ PF_EffectWorld tmpFourier(PF_EffectWorld inWorld) {
 		pixelPointerAtIndex->red = pixelPointerAtIndex->red / rMaxVal;
 		pixelPointerAtIndex->green = pixelPointerAtIndex->green / gMaxVal;
 		pixelPointerAtIndex->blue = pixelPointerAtIndex->blue / bMaxVal;
+
+		// Make a copy
+		copyImgRedDataVector.push_back(pixelPointerAtIndex->red);
+		copyImgGreenDataVector.push_back(pixelPointerAtIndex->green);
+		copyImgBlueDataVector.push_back(pixelPointerAtIndex->blue);
 	}
 
 	// Circular shift
-	PF_Rect quadrant1, quadrant2, quadrant3, quadrant4;
+	for (int row = 0; row < inWorld.height; row++) {
+		for (int col = 0; col < inWorld.width; col++) {
+			PF_PixelFloat currentP;
+			PF_Point srcP = {0, (inWorld.height - 1 - row) };
 
-	quadrant1.top = 0;
-	quadrant1.left = inWorld.width / 2;
-	quadrant1.right = inWorld.width;
-	quadrant1.bottom = inWorld.height / 2;
+			if (col < (inWorld.width/2)) {
+				srcP.h = col + (inWorld.width / 2);
+			}
+			else {
+				srcP.h = col - (inWorld.width / 2);
+			}
 
-	quadrant2.top = 0;
-	quadrant2.left = 0;
-	quadrant2.right = inWorld.width / 2;
-	quadrant2.bottom = inWorld.height / 2;
+			if (row < (inWorld.height / 2)) {
+				srcP.v = row + (inWorld.height / 2);
+			}
+			else {
+				srcP.v = row - (inWorld.width / 2);
+			}
 
-	quadrant3.top = inWorld.height / 2;
-	quadrant3.left = 0;
-	quadrant3.right = inWorld.width / 2;
-	quadrant3.bottom = inWorld.height;
+			unsigned long dstPointAt = (row * inWorld.width) + col;
+			unsigned long srcPointAt = (srcP.v * inWorld.width) + srcP.h;
 
-	quadrant4.top = inWorld.height / 2;
-	quadrant4.left = inWorld.width / 2;
-	quadrant4.right = inWorld.width;
-	quadrant4.bottom = inWorld.height;
+			pixelPointerAtIndex = (PF_PixelFloat*)((char*)inWorld.data + (dstPointAt * sizeof(PF_PixelFloat)));
 
-	/*if (inWorld.width % 2 != 0) {
-		
-	}*/
-
-	for (int col = 0; col < inWorld.width; col++) {
-		std::vector<std::complex<double>> tmpRedVector, tmpGreenVector, tmpBlueVector;
-
-		tmpRedVector.clear();
-		tmpGreenVector.clear();
-		tmpBlueVector.clear();
-
-		for (int row = 0; row < inWorld.height; row++) {
-			unsigned long pointAt = (row * inWorld.width) + col;
-
-			tmpRedVector.push_back(imgRedDataVector[pointAt]);
-			tmpGreenVector.push_back(imgGreenDataVector[pointAt]);
-			tmpBlueVector.push_back(imgBlueDataVector[pointAt]);
+			pixelPointerAtIndex->red = copyImgRedDataVector[srcPointAt];
+			pixelPointerAtIndex->green = copyImgGreenDataVector[srcPointAt];
+			pixelPointerAtIndex->blue = copyImgBlueDataVector[srcPointAt];
 		}
 	}
 
