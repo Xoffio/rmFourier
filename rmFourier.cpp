@@ -55,8 +55,7 @@ ParamsSetup (
 	PF_ParamDef	def;	
 
 	AEFX_CLR_STRUCT(def);
-
-	// RM-NOTE Here you make the parameters setup
+	PF_ADD_CHECKBOX("Inverse", "Calculate inverse Fourier transform", FALSE, 0, INVERSE_FFT_DISK_ID);
 	
 	out_data->num_params = RMFOURIER_NUM_PARAMS;
 
@@ -249,7 +248,7 @@ PreRender(
 	PF_PreRenderExtra	*extra)
 {
 	PF_Err err = PF_Err_NONE;
-	PF_ParamDef params;
+	PF_ParamDef inverseFftParam;
 	PF_RenderRequest req = extra->input->output_request;
 	PF_CheckoutResult in_result;
 
@@ -265,7 +264,15 @@ PreRender(
 			extra->output->pre_render_data = infoH;
 
 			// Params here
-			AEFX_CLR_STRUCT(params);
+			AEFX_CLR_STRUCT(inverseFftParam);
+			ERR(PF_CHECKOUT_PARAM(
+				in_data,
+				RMFOURIER_INVERSE_FFT,
+				in_data->current_time,
+				in_data->time_step,
+				in_data->time_scale,
+				&inverseFftParam
+			));
 
 			if (!err) {
 				req.preserve_rgb_of_zero_alpha = FALSE;	
@@ -285,17 +292,10 @@ PreRender(
 				if (!err) {
 					AEFX_CLR_STRUCT(*infoP);
 					// Here you get the input values
-					//infoP->blend_valFi 	= blend_param.u.fd.value;
-
+					infoP->inverseCB 	= inverseFftParam.u.bd.value;
 
 					UnionLRect(&in_result.result_rect, &extra->output->result_rect);
 					UnionLRect(&in_result.max_result_rect, &extra->output->max_result_rect);
-
-					//	Notice something missing, namely the PF_CHECKIN_PARAM to balance
-					//	the old-fashioned PF_CHECKOUT_PARAM, above? 
-
-					//	For SmartFX, AE automagically checks in any params checked out 
-					//	during PF_Cmd_SMART_PRE_RENDER, new or old-fashioned.
 				}
 			}
 
@@ -336,7 +336,6 @@ SmartRender(
 		if (!infoP->no_opB) {
 			// checkout input & output buffers.
 			ERR((extra->cb->checkout_layer_pixels(in_data->effect_ref, RMFOURIER_INPUT, &input_worldP)));
-
 			ERR(extra->cb->checkout_output(in_data->effect_ref, &output_worldP));
 
 			if (!err && output_worldP) {

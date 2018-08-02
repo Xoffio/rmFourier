@@ -51,13 +51,13 @@ const std::string   strName = "rmFourier",
 // RM-NOTE: parameter UI order
 enum {
 	RMFOURIER_INPUT = 0,
+	RMFOURIER_INVERSE_FFT,
 	RMFOURIER_NUM_PARAMS
 };
 
 // RM-NOTE: parameter disk order
 enum {
-	GAIN_DISK_ID = 1,
-	COLOR_DISK_ID,
+	INVERSE_FFT_DISK_ID = 1,
 };
 
 typedef struct {
@@ -66,6 +66,8 @@ typedef struct {
 	PF_InData	in_data;
 	PF_Boolean	no_opB;
 	PF_EffectWorld tmpOutput;
+
+	bool		inverseCB;
 } rmFourierInfo;
 
 #ifdef __cplusplus
