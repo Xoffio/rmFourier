@@ -35,6 +35,8 @@ typedef short int			int16;
 #include "AEFX_SuiteHelper.h"
 
 #include <string>
+#include <vector>
+#include <complex>
 
 const std::string   strName = "rmFourier",
 					strDescription = "RM skeleton for ctrl plugind";
@@ -61,13 +63,18 @@ enum {
 };
 
 typedef struct {
-	PF_ProgPtr	ref;
-	PF_SampPB	samp_pb;
-	PF_InData	in_data;
-	PF_Boolean	no_opB;
-	PF_EffectWorld tmpOutput;
+	PF_ProgPtr							ref;
+	PF_SampPB							samp_pb;
+	PF_InData							in_data;
+	PF_Boolean							no_opB;
+	PF_EffectWorld						tmpOutput;
 
-	bool		inverseCB;
+	bool								inverseCB;
+	std::vector<std::complex<double>>	tmpVectorR,
+										*imgRedDataVector;////, imgGreenDataVector, imgBlueDataVector, 
+										//finalImgGreenDataVector;
+	unsigned int						fftState; // 0= Columns, 1= Rows 
+	double								rMax;
 } rmFourierInfo;
 
 #ifdef __cplusplus

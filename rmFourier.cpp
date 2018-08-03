@@ -228,6 +228,60 @@ fourier32(
 	return err;
 }
 
+static PF_Err
+pushPixelToVector(
+	void			*refcon,
+	A_long 			xL,
+	A_long 			yL,
+	PF_PixelFloat 	*inP,
+	PF_PixelFloat 	*outP)
+{
+	register rmFourierInfo	*siP = (rmFourierInfo*)refcon;
+	PF_Err				err = PF_Err_NONE;
+
+	AEGP_SuiteHandler suites(siP->in_data.pica_basicP);
+
+	
+	if (siP->fftState == 0) {
+		siP->tmpVectorR.operator[](xL) = inP->red;
+	}
+	if (siP->fftState == 1) {
+		A_long currentIndex = (yL*siP->in_data.width) + xL;
+		siP->tmpVectorR.operator[](yL) = siP->imgRedDataVector->operator[](currentIndex);
+	}
+	if (siP->fftState == 2) {
+
+		outP->alpha = inP->alpha;
+		outP->red = log( 1 + abs(siP->tmpVectorR.operator[](yL)) );
+		outP->green = inP->green;
+		outP->blue = inP->blue;
+		
+		if (outP->red > siP->rMax) siP->rMax = outP->red;
+	}
+	
+
+	return err;
+}
+
+static PF_Err
+normalizeImg(
+	void			*refcon,
+	A_long 			xL,
+	A_long 			yL,
+	PF_PixelFloat 	*inP,
+	PF_PixelFloat 	*outP)
+{
+	register rmFourierInfo	*siP = (rmFourierInfo*)refcon;
+	PF_Err				err = PF_Err_NONE;
+
+	AEGP_SuiteHandler suites(siP->in_data.pica_basicP);
+
+	outP->red = outP->red / siP->rMax;
+
+
+	return err;
+}
+
 static PF_Err 
 Render (
 	PF_InData		*in_data,
@@ -358,17 +412,90 @@ SmartRender(
 				if (!err) {
 					switch (format) {
 
-					case PF_PixelFormat_ARGB128:
-						*output_worldP = tmpFourier(*input_worldP);
-						/*ERR(suites.IterateFloatSuite1()->iterate(in_data,
-							0,                        // progress base
-							output_worldP->height,    // progress final
-							input_worldP,             // src
-							NULL,                     // area - null for all pixels
-							(void*)infoP,              // custom data pointer
-							fourier32,        // pixel function pointer
-							output_worldP));*/
+					case PF_PixelFormat_ARGB128: {
+
+						// Initialize vectors
+						//infoP->inverseCB;
+
+						std::vector<std::complex<double>>	tmpVectorR,
+															imgRedDataVector;
+						A_long imgSize = input_worldP->width * input_worldP->height;
+						
+
+						// Initialize the vector
+						// Note: 'imgRedDataVector.reserve(input_worldP->height * input_worldP->width);' won't work.
+						for (A_long i = 0; i < input_worldP->width; i++) {
+							infoP->tmpVectorR.push_back(0);
+						}
+
+						infoP->fftState = 0;
+						for (A_long row = 0; row < input_worldP->height; row++) {
+							const PF_Rect currentColumn = {0, row, input_worldP->width, (row+1)}; //left, top, right, bottom;
+							ERR(suites.IterateFloatSuite1()->iterate(
+								in_data,
+								0,							// progress base
+								output_worldP->height,		// progress final
+								input_worldP,				// src
+								&currentColumn,				// area - null for all pixels
+								(void*)infoP,				// custom data pointer
+								pushPixelToVector,			// pixel function pointer
+								output_worldP
+							));
+
+							fft::transform(infoP->tmpVectorR);
+							imgRedDataVector.insert(std::end(imgRedDataVector), std::begin(infoP->tmpVectorR), std::end(infoP->tmpVectorR));
+						}
+
+						infoP->tmpVectorR.clear();
+						for (A_long i = 0; i < input_worldP->height; i++) {
+							infoP->tmpVectorR.push_back(0);
+						}
+
+						infoP->imgRedDataVector = &imgRedDataVector;
+						for (A_long col = 0; col < input_worldP->width; col++) {
+							infoP->fftState = 1;
+							const PF_Rect currentRow = { col, 0, (col + 1), input_worldP->height }; //left, top, right, bottom;
+							ERR(suites.IterateFloatSuite1()->iterate(
+								in_data,
+								0,							// progress base
+								output_worldP->height,		// progress final
+								input_worldP,				// src
+								&currentRow,				// area - null for all pixels
+								(void*)infoP,				// custom data pointer
+								pushPixelToVector,			// pixel function pointer
+								output_worldP
+							));
+							fft::transform(infoP->tmpVectorR);
+
+							infoP->fftState = 2;
+							ERR(suites.IterateFloatSuite1()->iterate(
+								in_data,
+								0,							// progress base
+								output_worldP->height,		// progress final
+								input_worldP,				// src
+								&currentRow,				// area - null for all pixels
+								(void*)infoP,				// custom data pointer
+								pushPixelToVector,			// pixel function pointer
+								output_worldP
+							));
+						}
+
+
+						ERR(suites.IterateFloatSuite1()->iterate(
+							in_data,
+							0,							// progress base
+							output_worldP->height,		// progress final
+							input_worldP,				// src
+							NULL,						// area - null for all pixels
+							(void*)infoP,				// custom data pointer
+							normalizeImg,				// pixel function pointer
+							output_worldP
+						));
+
+
 						break;
+					}
+						
 
 					case PF_PixelFormat_ARGB64:
 						break;
