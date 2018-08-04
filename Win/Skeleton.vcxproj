@@ -376,6 +376,7 @@ cl /D "MSWindows" /EP $(IntDir)%(Filename).rrc &gt;               "$(ProjectDir)
     <ClCompile Include="..\..\..\Util\Smart_Utils.cpp" />
     <ClCompile Include="..\FftComplex.cpp" />
     <ClCompile Include="..\rmFourier.cpp" />
+    <ClCompile Include="..\rmFourierFunctions.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

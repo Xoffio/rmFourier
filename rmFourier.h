@@ -17,6 +17,11 @@ typedef short int			int16;
 #include "AEConfig.h"
 
 #ifdef AE_OS_WIN
+	
+	// Define the next two lines in Windows, because an error with thread and VS
+	#define INT64_MAX    _I64_MAX
+	#define INTMAX_MAX   INT64_MAX
+
 	typedef unsigned short PixelType;
 	#include <Windows.h>
 #endif
@@ -33,10 +38,13 @@ typedef short int			int16;
 #include "AEGP_SuiteHandler.h"
 #include "Smart_Utils.h"
 #include "AEFX_SuiteHelper.h"
+#include "FftComplex.hpp"
 
 #include <string>
 #include <vector>
 #include <complex>
+#include <ratio>
+#include <thread>
 
 const std::string   strName = "rmFourier",
 					strDescription = "RM skeleton for ctrl plugind";
@@ -71,27 +79,64 @@ typedef struct {
 
 	bool								inverseCB;
 	std::vector<std::complex<double>>	tmpVectorR,
+										imgVectorR,
 										*imgRedDataVector;////, imgGreenDataVector, imgBlueDataVector, 
 										//finalImgGreenDataVector;
 	unsigned int						fftState; // 0= Columns, 1= Rows 
 	double								rMax;
+	A_long								imgWidth, imgHeight;
 } rmFourierInfo;
 
-#ifdef __cplusplus
-	extern "C" {
-#endif
-	
-DllExport	PF_Err 
-EntryPointFunc(	
-	PF_Cmd			cmd,
-	PF_InData		*in_data,
-	PF_OutData		*out_data,
-	PF_ParamDef		*params[],
-	PF_LayerDef		*output,
-	void			*extra) ;
 
-#ifdef __cplusplus
+extern "C" {
+	DllExport	
+	PF_Err 
+	EntryPointFunc(	
+		PF_Cmd			cmd,
+		PF_InData		*in_data,
+		PF_OutData		*out_data,
+		PF_ParamDef		*params[],
+		PF_LayerDef		*output,
+		void			*extra) ;
 }
-#endif
+
+static PF_PixelFloat
+*getXY32(PF_EffectWorld &def, int x, int y);
+
+PF_EffectWorld tmpFourier(PF_EffectWorld inWorld);
+
+PF_Err
+pushPixelToVector(
+	void			*refcon,
+	A_long 			xL,
+	A_long 			yL,
+	PF_PixelFloat 	*inP,
+	PF_PixelFloat 	*outP);
+
+PF_Err
+normalizeImg(
+	void			*refcon,
+	A_long 			xL,
+	A_long 			yL,
+	PF_PixelFloat 	*inP,
+	PF_PixelFloat 	*outP);
+
+PF_Err
+pixelToVector(
+	void			*refcon,
+	A_long 			xL,
+	A_long 			yL,
+	PF_PixelFloat 	*inP,
+	PF_PixelFloat 	*outP);
+
+PF_Err
+vectorToPixel(
+	void			*refcon,
+	A_long 			xL,
+	A_long 			yL,
+	PF_PixelFloat 	*inP,
+	PF_PixelFloat 	*outP);
+
+void transformRow(std::vector<std::complex<double>> *imgDataVec, std::vector<std::complex<double>> &currentRowVec, A_long row, A_long imgWidth);
 
 #endif // RMFOURIER_H

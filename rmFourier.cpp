@@ -1,8 +1,4 @@
 #include "rmFourier.h"
-#include "FftComplex.hpp"
-#include "math.h"
-#include <vector>
-#include <cmath>
 
 static PF_Err 
 About (	
@@ -58,226 +54,6 @@ ParamsSetup (
 	PF_ADD_CHECKBOX("Inverse", "Calculate inverse Fourier transform", FALSE, 0, INVERSE_FFT_DISK_ID);
 	
 	out_data->num_params = RMFOURIER_NUM_PARAMS;
-
-	return err;
-}
-
-static PF_PixelFloat
-*getXY(PF_EffectWorld &def, int x, int y) {
-	return (PF_PixelFloat*)((char*)def.data +
-		(y * def.rowbytes) +
-		(x * sizeof(PF_PixelFloat)));
-
-}
-
-PF_EffectWorld tmpFourier(PF_EffectWorld inWorld) {
-	std::vector<std::complex<double>>	imgRedDataVector, imgGreenDataVector, imgBlueDataVector, finalImgGreenDataVector;
-	std::vector<double>					copyImgRedDataVector, copyImgGreenDataVector, copyImgBlueDataVector;
-	int imgArraySize = inWorld.height * inWorld.width;
-
-	// Convert the raw images to vectors
-	PF_PixelFloat* pixelPointerAtIndex;
-	for (unsigned long index= 0; index < imgArraySize; index++){
-		pixelPointerAtIndex = (PF_PixelFloat*)((char*)inWorld.data + (index * sizeof(PF_PixelFloat)));
-		imgRedDataVector.push_back( (std::complex<double>) pixelPointerAtIndex->red);
-		//imgGreenDataVector.push_back((std::complex<double>) pixelPointerAtIndex->green);
-		imgBlueDataVector.push_back((std::complex<double>) pixelPointerAtIndex->blue);
-	}
-
-	// Transform rows
-	for (int row = 0; row < inWorld.height; row++) {
-		std::vector<std::complex<double>> tmpRedVector, tmpGreenVector, tmpBlueVector;
-		tmpRedVector.clear();
-		tmpGreenVector.clear();
-		tmpBlueVector.clear();
-		for (int col = 0; col < inWorld.width; col++) {
-			unsigned long pointAt = (row * inWorld.width) + col;
-			pixelPointerAtIndex = (PF_PixelFloat*)((char*)inWorld.data + ( pointAt * sizeof(PF_PixelFloat)));
-			//tmpRedVector.push_back((std::complex<double>) pixelPointerAtIndex->red);
-			tmpGreenVector.push_back((std::complex<double>) pixelPointerAtIndex->green);
-			//tmpBlueVector.push_back((std::complex<double>) pixelPointerAtIndex->blue);
-			//finalImgRedDataVector.push_back(0);
-			finalImgGreenDataVector.push_back(0);
-			//finalImgBlueDataVector.push_back(0);
-		}
-
-		// Fourier Transform Row
-		//fft::transform(tmpRedVector);
-		fft::transform(tmpGreenVector);
-		//fft::transform(tmpBlueVector);
-
-		//imgRedDataVector.insert(std::end(imgRedDataVector), std::begin(tmpRedVector), std::end(tmpRedVector));
-		imgGreenDataVector.insert(std::end(imgGreenDataVector), std::begin(tmpGreenVector), std::end(tmpGreenVector));
-		//imgBlueDataVector.insert(std::end(imgBlueDataVector), std::begin(tmpBlueVector), std::end(tmpBlueVector));
-	}
-
-	// Transform Columns
-	for (int col = 0; col < inWorld.width; col++) {
-		std::vector<std::complex<double>> tmpRedVector, tmpGreenVector, tmpBlueVector;
-		tmpRedVector.clear();
-		tmpGreenVector.clear();
-		tmpBlueVector.clear();
-		for (int row = 0; row < inWorld.height; row++) {
-			unsigned long pointAt = (row * inWorld.width) + col;
-			//tmpRedVector.push_back(imgRedDataVector[pointAt]);
-			tmpGreenVector.push_back(imgGreenDataVector[pointAt]);
-			//tmpBlueVector.push_back(imgBlueDataVector[pointAt]);
-		}
-		// Fourier Transform Row
-		//fft::transform(tmpRedVector);
-		fft::transform(tmpGreenVector);
-		//fft::transform(tmpBlueVector);
-		for (int row = 0; row < inWorld.height; row++) {
-			unsigned long pointAt = (row * inWorld.width) + col;
-			//finalImgRedDataVector[pointAt] = tmpRedVector[row];
-			finalImgGreenDataVector[pointAt] = tmpGreenVector[row];
-			//finalImgBlueDataVector[pointAt] = tmpBlueVector[row];
-		}
-	}
-
-	// Fourier Transform vectors
-	fft::transform(imgRedDataVector);
-	fft::transform(imgGreenDataVector);
-	fft::transform(imgBlueDataVector);
-
-	// Copy the Fourier data from the vectors back to the image
-	double rMaxVal = 0;
-	double gMaxVal = 0;
-	double bMaxVal = 0;
-	for (unsigned long index = 0; index < imgArraySize; index++) {
-		pixelPointerAtIndex = (PF_PixelFloat*)((char*)inWorld.data + (index * sizeof(PF_PixelFloat)));
-		pixelPointerAtIndex->red	= log(1.0 + abs(imgRedDataVector[index]) );
-		pixelPointerAtIndex->green	= log(1.0 + abs(finalImgGreenDataVector[index]) );
-		pixelPointerAtIndex->blue	= log(1.0 + abs(imgBlueDataVector[index]) );
-
-		// Get max value
-		if (pixelPointerAtIndex->red > rMaxVal) rMaxVal = pixelPointerAtIndex->red;
-		if (pixelPointerAtIndex->green > gMaxVal) gMaxVal = pixelPointerAtIndex->green;
-		if (pixelPointerAtIndex->blue > bMaxVal) bMaxVal = pixelPointerAtIndex->blue;
-	}
-
-	// Normalize values
-	for (unsigned long index = 0; index < imgArraySize; index++) {
-		pixelPointerAtIndex = (PF_PixelFloat*)((char*)inWorld.data + (index * sizeof(PF_PixelFloat)));
-		pixelPointerAtIndex->red = pixelPointerAtIndex->red / rMaxVal;
-		pixelPointerAtIndex->green = pixelPointerAtIndex->green / gMaxVal;
-		pixelPointerAtIndex->blue = pixelPointerAtIndex->blue / bMaxVal;
-
-		// Make a copy
-		copyImgRedDataVector.push_back(pixelPointerAtIndex->red);
-		copyImgGreenDataVector.push_back(pixelPointerAtIndex->green);
-		copyImgBlueDataVector.push_back(pixelPointerAtIndex->blue);
-	}
-
-	// Circular shift
-	for (int row = 0; row < inWorld.height; row++) {
-		for (int col = 0; col < inWorld.width; col++) {
-			PF_PixelFloat currentP;
-			PF_Point srcP = {0, (inWorld.height - 1 - row) };
-
-			if (col < (inWorld.width/2)) {
-				srcP.h = col + (inWorld.width / 2);
-			}
-			else {
-				srcP.h = col - (inWorld.width / 2);
-			}
-
-			if (row < (inWorld.height / 2)) {
-				srcP.v = row + (inWorld.height / 2);
-			}
-			else {
-				srcP.v = row - (inWorld.width / 2);
-			}
-
-			unsigned long dstPointAt = (row * inWorld.width) + col;
-			unsigned long srcPointAt = (srcP.v * inWorld.width) + srcP.h;
-
-			pixelPointerAtIndex = (PF_PixelFloat*)((char*)inWorld.data + (dstPointAt * sizeof(PF_PixelFloat)));
-
-			pixelPointerAtIndex->red = copyImgRedDataVector[srcPointAt];
-			pixelPointerAtIndex->green = copyImgGreenDataVector[srcPointAt];
-			//pixelPointerAtIndex->blue = copyImgBlueDataVector[srcPointAt];
-		}
-	}
-
-	return(inWorld);
-}
-
-static PF_Err
-fourier32(
-	void			*refcon,
-	A_long 			xL,
-	A_long 			yL,
-	PF_PixelFloat 	*inP,
-	PF_PixelFloat 	*outP)
-{
-	register rmFourierInfo	*siP = (rmFourierInfo*)refcon;
-	PF_Err				err = PF_Err_NONE;
-	PF_Fixed			new_xFi = 0,
-						new_yFi = 0;
-
-	AEGP_SuiteHandler suites(siP->in_data.pica_basicP);
-	
-
-	// Math.sqrt( Math.pow( re.data[i], 2 ) + Math.pow( im.data[i], 2 ) );
-	outP->alpha = inP->alpha;
-	outP->red = sqrt( pow(inP->red, 2) + pow(inP->red, 2) );
-	outP->green = sqrt(pow(inP->green, 2) + pow(inP->green, 2));
-	outP->blue = sqrt(pow(inP->blue, 2) + pow(inP->blue, 2));
-
-	return err;
-}
-
-static PF_Err
-pushPixelToVector(
-	void			*refcon,
-	A_long 			xL,
-	A_long 			yL,
-	PF_PixelFloat 	*inP,
-	PF_PixelFloat 	*outP)
-{
-	register rmFourierInfo	*siP = (rmFourierInfo*)refcon;
-	PF_Err				err = PF_Err_NONE;
-
-	AEGP_SuiteHandler suites(siP->in_data.pica_basicP);
-
-	
-	if (siP->fftState == 0) {
-		siP->tmpVectorR.operator[](xL) = inP->red;
-	}
-	if (siP->fftState == 1) {
-		A_long currentIndex = (yL*siP->in_data.width) + xL;
-		siP->tmpVectorR.operator[](yL) = siP->imgRedDataVector->operator[](currentIndex);
-	}
-	if (siP->fftState == 2) {
-
-		outP->alpha = inP->alpha;
-		outP->red = log( 1 + abs(siP->tmpVectorR.operator[](yL)) );
-		outP->green = inP->green;
-		outP->blue = inP->blue;
-		
-		if (outP->red > siP->rMax) siP->rMax = outP->red;
-	}
-	
-
-	return err;
-}
-
-static PF_Err
-normalizeImg(
-	void			*refcon,
-	A_long 			xL,
-	A_long 			yL,
-	PF_PixelFloat 	*inP,
-	PF_PixelFloat 	*outP)
-{
-	register rmFourierInfo	*siP = (rmFourierInfo*)refcon;
-	PF_Err				err = PF_Err_NONE;
-
-	AEGP_SuiteHandler suites(siP->in_data.pica_basicP);
-
-	outP->red = outP->red / siP->rMax;
-
 
 	return err;
 }
@@ -347,6 +123,8 @@ PreRender(
 					AEFX_CLR_STRUCT(*infoP);
 					// Here you get the input values
 					infoP->inverseCB 	= inverseFftParam.u.bd.value;
+					infoP->imgWidth		= in_data->width;
+					infoP->imgHeight	= in_data->height;
 
 					UnionLRect(&in_result.result_rect, &extra->output->result_rect);
 					UnionLRect(&in_result.max_result_rect, &extra->output->max_result_rect);
@@ -424,7 +202,7 @@ SmartRender(
 
 						// Initialize the vector
 						// Note: 'imgRedDataVector.reserve(input_worldP->height * input_worldP->width);' won't work.
-						for (A_long i = 0; i < input_worldP->width; i++) {
+						/*for (A_long i = 0; i < input_worldP->width; i++) {
 							infoP->tmpVectorR.push_back(0);
 						}
 
@@ -490,8 +268,57 @@ SmartRender(
 							(void*)infoP,				// custom data pointer
 							normalizeImg,				// pixel function pointer
 							output_worldP
+						));*/
+
+						infoP->imgVectorR.resize(imgSize);
+						/*for (A_long i = 0; i < imgSize; i++) {
+							infoP->imgVectorR.push_back(0);
+						}*/
+
+						// Get the pixels and build t a vector with it.
+						ERR(suites.IterateFloatSuite1()->iterate(
+							in_data,
+							0,							// progress base
+							output_worldP->height,		// progress final
+							input_worldP,				// src
+							NULL,						// area - null for all pixels
+							(void*)infoP,				// custom data pointer
+							pixelToVector,				// pixel function pointer
+							output_worldP
 						));
 
+						// Let's trasform every row with thread
+						const unsigned int numOfThreads = 20;
+						std::thread threads[numOfThreads];
+						int thPernTh = infoP->imgHeight / numOfThreads;
+						int remainderTh = infoP->imgHeight % numOfThreads;
+
+						for ( int count = 0; count < thPernTh; count++) {
+							std::vector<std::vector<std::complex<double>>> tmpThVectorsR(numOfThreads);
+							for ( int nTh = 0; nTh < numOfThreads; nTh++) {
+								A_long currentRow = (count*numOfThreads) + nTh;
+
+								//tmpThVectorsR[nTh].resize(infoP->imgWidth);
+								//transformRow(infoP->imgVectorR, tmpThVectorsR[nTh]);
+								threads[nTh] = std::thread(transformRow, &infoP->imgVectorR, tmpThVectorsR[nTh], currentRow, infoP->imgWidth);
+							}
+
+							for (unsigned int nTh = 0; nTh < numOfThreads; nTh++) {
+								threads[nTh].join();
+								//imgRedDataVector.insert(std::end(imgRedDataVector), std::begin(infoP->tmpVectorR), std::end(infoP->tmpVectorR));
+							}
+						}
+
+						ERR(suites.IterateFloatSuite1()->iterate(
+							in_data,
+							0,							// progress base
+							output_worldP->height,		// progress final
+							input_worldP,				// src
+							NULL,						// area - null for all pixels
+							(void*)infoP,				// custom data pointer
+							vectorToPixel,				// pixel function pointer
+							output_worldP
+						));
 
 						break;
 					}

@@ -100,6 +100,7 @@
     </ClCompile>
     <ClCompile Include="..\rmFourier.cpp" />
     <ClCompile Include="..\FftComplex.cpp" />
+    <ClCompile Include="..\rmFourierFunctions.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\SkeletonPiPL.r">
