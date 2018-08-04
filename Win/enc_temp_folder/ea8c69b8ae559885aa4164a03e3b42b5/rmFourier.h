@@ -79,7 +79,7 @@ typedef struct {
 
 	bool								inverseCB;
 	std::vector<std::complex<double>>	tmpVectorR,
-										imgVectorR, imgVectorG, imgVectorB,
+										imgVectorR,
 										*imgRedDataVector;////, imgGreenDataVector, imgBlueDataVector, 
 										//finalImgGreenDataVector;
 	unsigned int						fftState; // 0= Columns, 1= Rows 

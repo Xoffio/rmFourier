@@ -248,11 +248,9 @@ pixelToVector(
 	AEGP_SuiteHandler suites(siP->in_data.pica_basicP);
 
 	A_long currentIndex = (yL * siP->in_data.width) + xL;
-	
+	//siP->imgVectorR[currentIndex].real = inP->red;
 	siP->imgVectorR[currentIndex].real(inP->red);
-	siP->imgVectorG[currentIndex].real(inP->green);
-	siP->imgVectorB[currentIndex].real(inP->blue);
-	
+	//siP->imgVectorR.operator[](currentIndex) = inP->red;
 
 	return err;
 }
