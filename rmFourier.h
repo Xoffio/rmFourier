@@ -75,7 +75,7 @@ typedef struct {
 	PF_SampPB							samp_pb;
 	PF_InData							in_data;
 	PF_Boolean							no_opB;
-	PF_EffectWorld						tmpOutput;
+	PF_EffectWorld						*tmpOutput;
 
 	bool								inverseCB;
 	std::vector<std::complex<double>>	tmpVectorR,
@@ -122,6 +122,14 @@ normalizeImg(
 	PF_PixelFloat 	*outP);
 
 PF_Err
+circularShift(
+	void			*refcon,
+	A_long 			xL,
+	A_long 			yL,
+	PF_PixelFloat 	*inP,
+	PF_PixelFloat 	*outP);
+
+PF_Err
 pixelToVector(
 	void			*refcon,
 	A_long 			xL,
@@ -137,6 +145,7 @@ vectorToPixel(
 	PF_PixelFloat 	*inP,
 	PF_PixelFloat 	*outP);
 
-void transformRow(std::vector<std::complex<double>> *imgDataVec, std::vector<std::complex<double>> &currentRowVec, A_long row, A_long imgWidth);
+void transformRow(std::vector<std::complex<double>> *imgDataVec, A_long row, A_long imgWidth);
+void transformColumn(std::vector<std::complex<double>> *imgDataVec, A_long col, A_long imgWidth, A_long imgHeight);
 
 #endif // RMFOURIER_H

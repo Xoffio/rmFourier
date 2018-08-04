@@ -287,20 +287,19 @@ SmartRender(
 							output_worldP
 						));
 
-						// Let's trasform every row with thread
-						const unsigned int numOfThreads = 20;
+						// -------------- Let's trasform every row with thread --------------
+						const unsigned int numOfThreads = 16;
 						std::thread threads[numOfThreads];
 						int thPernTh = infoP->imgHeight / numOfThreads;
 						int remainderTh = infoP->imgHeight % numOfThreads;
 
 						for ( int count = 0; count < thPernTh; count++) {
-							std::vector<std::vector<std::complex<double>>> tmpThVectorsR(numOfThreads);
+							//std::vector<std::vector<std::complex<double>>> tmpThVectorsR(numOfThreads);
 							for ( int nTh = 0; nTh < numOfThreads; nTh++) {
 								A_long currentRow = (count*numOfThreads) + nTh;
 
 								//tmpThVectorsR[nTh].resize(infoP->imgWidth);
-								//transformRow(infoP->imgVectorR, tmpThVectorsR[nTh]);
-								threads[nTh] = std::thread(transformRow, &infoP->imgVectorR, tmpThVectorsR[nTh], currentRow, infoP->imgWidth);
+								threads[nTh] = std::thread(transformRow, &infoP->imgVectorR, currentRow, infoP->imgWidth);
 							}
 
 							for (unsigned int nTh = 0; nTh < numOfThreads; nTh++) {
@@ -309,6 +308,35 @@ SmartRender(
 							}
 						}
 
+						// Let's compute the remainder
+						for (int count = 0; count < remainderTh; count++) {
+							A_long currentRow = (thPernTh*numOfThreads) + count;
+							transformRow(&infoP->imgVectorR, currentRow, infoP->imgWidth);
+						}
+
+						// -------------- Let's trasform every column with thread --------------
+						thPernTh = infoP->imgWidth / numOfThreads;
+						remainderTh = infoP->imgWidth % numOfThreads;
+
+						for (int count = 0; count < thPernTh; count++) {
+							for (int nTh = 0; nTh < numOfThreads; nTh++) {
+								A_long currentColumn = (count*numOfThreads) + nTh;
+
+								threads[nTh] = std::thread(transformColumn, &infoP->imgVectorR, currentColumn, infoP->imgWidth, infoP->imgHeight);
+							}
+
+							for (unsigned int nTh = 0; nTh < numOfThreads; nTh++) {
+								threads[nTh].join();
+							}
+						}
+
+						// Let's compute the remainder
+						for (int count = 0; count < remainderTh; count++) {
+							A_long currentColumn = (thPernTh*numOfThreads) + count;
+							transformColumn(&infoP->imgVectorR, currentColumn, infoP->imgWidth, infoP->imgHeight);
+						}
+
+						// Put the values in the vector back to the image, also get the max in order to normalize later
 						ERR(suites.IterateFloatSuite1()->iterate(
 							in_data,
 							0,							// progress base
@@ -317,6 +345,31 @@ SmartRender(
 							NULL,						// area - null for all pixels
 							(void*)infoP,				// custom data pointer
 							vectorToPixel,				// pixel function pointer
+							output_worldP
+						));
+
+						// Normalize the image
+						ERR(suites.IterateFloatSuite1()->iterate(
+							in_data,
+							0,							// progress base
+							output_worldP->height,		// progress final
+							input_worldP,				// src
+							NULL,						// area - null for all pixels
+							(void*)infoP,				// custom data pointer
+							normalizeImg,				// pixel function pointer
+							output_worldP
+						));
+
+						// Circular shift
+						infoP->tmpOutput = output_worldP;
+						ERR(suites.IterateFloatSuite1()->iterate(
+							in_data,
+							0,							// progress base
+							output_worldP->height,		// progress final
+							input_worldP,				// src
+							NULL,						// area - null for all pixels
+							(void*)infoP,				// custom data pointer
+							circularShift,				// pixel function pointer
 							output_worldP
 						));
 
