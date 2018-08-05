@@ -270,10 +270,10 @@ SmartRender(
 							output_worldP
 						));*/
 
+						//AEGP_IterateGeneric
 						infoP->imgVectorR.resize(imgSize);
-						/*for (A_long i = 0; i < imgSize; i++) {
-							infoP->imgVectorR.push_back(0);
-						}*/
+						infoP->imgVectorG.resize(imgSize);
+						infoP->imgVectorB.resize(imgSize);
 
 						// Get the pixels and build t a vector with it.
 						ERR(suites.IterateFloatSuite1()->iterate(
@@ -294,17 +294,14 @@ SmartRender(
 						int remainderTh = infoP->imgHeight % numOfThreads;
 
 						for ( int count = 0; count < thPernTh; count++) {
-							//std::vector<std::vector<std::complex<double>>> tmpThVectorsR(numOfThreads);
 							for ( int nTh = 0; nTh < numOfThreads; nTh++) {
 								A_long currentRow = (count*numOfThreads) + nTh;
 
-								//tmpThVectorsR[nTh].resize(infoP->imgWidth);
 								threads[nTh] = std::thread(transformRow, &infoP->imgVectorR, currentRow, infoP->imgWidth);
 							}
 
 							for (unsigned int nTh = 0; nTh < numOfThreads; nTh++) {
 								threads[nTh].join();
-								//imgRedDataVector.insert(std::end(imgRedDataVector), std::begin(infoP->tmpVectorR), std::end(infoP->tmpVectorR));
 							}
 						}
 

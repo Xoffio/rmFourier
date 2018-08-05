@@ -17,11 +17,6 @@ typedef short int			int16;
 #include "AEConfig.h"
 
 #ifdef AE_OS_WIN
-	
-	// Define the next two lines in Windows, because an error with thread and VS
-	#define INT64_MAX    _I64_MAX
-	#define INTMAX_MAX   INT64_MAX
-
 	typedef unsigned short PixelType;
 	#include <Windows.h>
 #endif

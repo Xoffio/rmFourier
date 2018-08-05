@@ -250,8 +250,8 @@ pixelToVector(
 	A_long currentIndex = (yL * siP->in_data.width) + xL;
 	
 	siP->imgVectorR[currentIndex].real(inP->red);
-	siP->imgVectorG[currentIndex].real(inP->green);
-	siP->imgVectorB[currentIndex].real(inP->blue);
+	//siP->imgVectorG[currentIndex].real(inP->green);
+	//siP->imgVectorB[currentIndex].real(inP->blue);
 	
 
 	return err;
