@@ -78,7 +78,7 @@ typedef struct {
 										*imgRedDataVector;////, imgGreenDataVector, imgBlueDataVector, 
 										//finalImgGreenDataVector;
 	unsigned int						fftState; // 0= Columns, 1= Rows 
-	double								rMax;
+	double								rMax, gMax, bMax;
 	A_long								imgWidth, imgHeight;
 } rmFourierInfo;
 
@@ -140,7 +140,19 @@ vectorToPixel(
 	PF_PixelFloat 	*inP,
 	PF_PixelFloat 	*outP);
 
-void transformRow(std::vector<std::complex<double>> *imgDataVec, A_long row, A_long imgWidth);
-void transformColumn(std::vector<std::complex<double>> *imgDataVec, A_long col, A_long imgWidth, A_long imgHeight);
+void transformRow(
+	std::vector<std::complex<double>> *imgDataVecR,
+	std::vector<std::complex<double>> *imgDataVecG,
+	std::vector<std::complex<double>> *imgDataVecB,
+	A_long row,
+	A_long imgWidth);
+
+void transformColumn(
+	std::vector<std::complex<double>> *imgDataVecR,
+	std::vector<std::complex<double>> *imgDataVecG,
+	std::vector<std::complex<double>> *imgDataVecB,
+	A_long col,
+	A_long imgWidth,
+	A_long imgHeight);
 
 #endif // RMFOURIER_H

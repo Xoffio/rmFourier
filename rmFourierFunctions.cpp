@@ -191,6 +191,8 @@ normalizeImg(
 	AEGP_SuiteHandler suites(siP->in_data.pica_basicP);
 
 	outP->red = outP->red / siP->rMax;
+	outP->green = outP->green / siP->rMax;
+	outP->blue = outP->blue / siP->rMax;
 
 
 	return err;
@@ -250,8 +252,8 @@ pixelToVector(
 	A_long currentIndex = (yL * siP->in_data.width) + xL;
 	
 	siP->imgVectorR[currentIndex].real(inP->red);
-	//siP->imgVectorG[currentIndex].real(inP->green);
-	//siP->imgVectorB[currentIndex].real(inP->blue);
+	siP->imgVectorG[currentIndex].real(inP->green);
+	siP->imgVectorB[currentIndex].real(inP->blue);
 	
 
 	return err;
@@ -273,46 +275,74 @@ vectorToPixel(
 	A_long currentIndex = (yL * siP->in_data.width) + xL;
 
 	PF_FpShort finalR = log(1 + abs(siP->imgVectorR[currentIndex]));
+	PF_FpShort finalG = log(1 + abs(siP->imgVectorG[currentIndex]));
+	PF_FpShort finalB = log(1 + abs(siP->imgVectorB[currentIndex]));
 
 	if (finalR > siP->rMax) siP->rMax = finalR;
+	if (finalR > siP->gMax) siP->gMax = finalG;
+	if (finalR > siP->bMax) siP->bMax = finalB;
 
 	outP->alpha = 1;
 	outP->red = finalR;
-	outP->green = inP->green;
-	outP->blue = abs(siP->imgVectorR.operator[](currentIndex));
+	outP->green = finalG;
+	outP->blue = finalB;
 
 	return err;
 }
 
-void transformRow(std::vector<std::complex<double>> *imgDataVec, A_long row, A_long imgWidth) {
-	std::vector<std::complex<double>> currentRowVec;
+void transformRow(
+	std::vector<std::complex<double>> *imgDataVecR, 
+	std::vector<std::complex<double>> *imgDataVecG,
+	std::vector<std::complex<double>> *imgDataVecB,
+	A_long row, 
+	A_long imgWidth) {
+
+	std::vector<std::complex<double>> currentRowVecR, currentRowVecG, currentRowVecB;
 
 	for (A_long i = 0; i < imgWidth; i++) {
 		A_long currentIndex = (imgWidth*row) + i;
-		currentRowVec.push_back((*imgDataVec)[currentIndex]);
-		//currentRowVec[i] = imgDataVec.operator[](currentIndex);
+		currentRowVecR.push_back((*imgDataVecR)[currentIndex]);
+		currentRowVecG.push_back((*imgDataVecG)[currentIndex]);
+		currentRowVecB.push_back((*imgDataVecB)[currentIndex]);
 	}
 
-	fft::transform(currentRowVec);
+	fft::transform(currentRowVecR);
+	fft::transform(currentRowVecG);
+	fft::transform(currentRowVecB);
 
 	for (A_long i = 0; i < imgWidth; i++) {
 		A_long currentIndex = (imgWidth*row) + i;
-		imgDataVec->operator[](currentIndex) = currentRowVec[i];
+		imgDataVecR->operator[](currentIndex) = currentRowVecR[i];
+		imgDataVecG->operator[](currentIndex) = currentRowVecG[i];
+		imgDataVecB->operator[](currentIndex) = currentRowVecB[i];
 	}
 }
 
-void transformColumn(std::vector<std::complex<double>> *imgDataVec, A_long col, A_long imgWidth, A_long imgHeight) {
-	std::vector<std::complex<double>> currentColVec;
+void transformColumn(
+	std::vector<std::complex<double>> *imgDataVecR,
+	std::vector<std::complex<double>> *imgDataVecG,
+	std::vector<std::complex<double>> *imgDataVecB, 
+	A_long col, 
+	A_long imgWidth, 
+	A_long imgHeight) {
+
+	std::vector<std::complex<double>> currentColVecR, currentColVecG, currentColVecB;
 
 	for (A_long i = 0; i < imgHeight; i++) {
 		A_long currentIndex = (imgWidth*i) + col;
-		currentColVec.push_back((*imgDataVec)[currentIndex]);
+		currentColVecR.push_back((*imgDataVecR)[currentIndex]);
+		currentColVecG.push_back((*imgDataVecG)[currentIndex]);
+		currentColVecB.push_back((*imgDataVecB)[currentIndex]);
 	}
 
-	fft::transform(currentColVec);
+	fft::transform(currentColVecR);
+	fft::transform(currentColVecG);
+	fft::transform(currentColVecB);
 
 	for (A_long i = 0; i < imgHeight; i++) {
 		A_long currentIndex = (imgWidth*i) + col;
-		imgDataVec->operator[](currentIndex) = currentColVec[i];
+		imgDataVecR->operator[](currentIndex) = currentColVecR[i];
+		imgDataVecG->operator[](currentIndex) = currentColVecG[i];
+		imgDataVecB->operator[](currentIndex) = currentColVecB[i];
 	}
 }
