@@ -51,6 +51,9 @@ ParamsSetup (
 	PF_ParamDef	def;	
 
 	AEFX_CLR_STRUCT(def);
+	PF_ADD_LAYER("Select layer", PF_LayerDefault_NONE, CHECK_LAYER_DISK_ID);
+
+	AEFX_CLR_STRUCT(def);
 	PF_ADD_CHECKBOX("Inverse", "Calculate inverse Fourier transform", FALSE, 0, INVERSE_FFT_DISK_ID);
 	
 	out_data->num_params = RMFOURIER_NUM_PARAMS;
@@ -78,7 +81,7 @@ PreRender(
 	PF_PreRenderExtra	*extra)
 {
 	PF_Err err = PF_Err_NONE;
-	PF_ParamDef inverseFftParam;
+	PF_ParamDef inverseFftParam, checkoutLayerParam;
 	PF_RenderRequest req = extra->input->output_request;
 	PF_CheckoutResult in_result;
 
@@ -94,6 +97,15 @@ PreRender(
 			extra->output->pre_render_data = infoH;
 
 			// Params here
+			AEFX_CLR_STRUCT(inverseFftParam);
+			ERR(PF_CHECKOUT_PARAM(
+				in_data,
+				RMFOURIER_CHECK_LAYER,
+				in_data->current_time,//(in_data->current_time + params[CHECK_FRAME]->u.sd.value * in_data->time_step),
+				in_data->time_step,
+				in_data->time_scale,
+				&checkoutLayerParam));
+
 			AEFX_CLR_STRUCT(inverseFftParam);
 			ERR(PF_CHECKOUT_PARAM(
 				in_data,
@@ -125,6 +137,7 @@ PreRender(
 					infoP->inverseCB 	= inverseFftParam.u.bd.value;
 					infoP->imgWidth		= in_data->width;
 					infoP->imgHeight	= in_data->height;
+					infoP->phaseLayer	= &checkoutLayerParam.u.ld;
 
 					UnionLRect(&in_result.result_rect, &extra->output->result_rect);
 					UnionLRect(&in_result.max_result_rect, &extra->output->max_result_rect);
@@ -191,113 +204,40 @@ SmartRender(
 					switch (format) {
 
 					case PF_PixelFormat_ARGB128: {
-
-						// Initialize vectors
-						//infoP->inverseCB;
-
-						std::vector<std::complex<double>>	tmpVectorR,
-															imgRedDataVector;
 						A_long imgSize = input_worldP->width * input_worldP->height;
+
+						if (!infoP->inverseCB) {
+							//AEGP_IterateGeneric
+							infoP->imgVectorR.resize(imgSize);
+							infoP->imgVectorG.resize(imgSize);
+							infoP->imgVectorB.resize(imgSize);
+
+							// Make a vector from the image pixels.
+							ERR(suites.IterateFloatSuite1()->iterate(
+								in_data,
+								0,							// progress base
+								output_worldP->height,		// progress final
+								infoP->phaseLayer,				// src
+								NULL,						// area - null for all pixels
+								(void*)infoP,				// custom data pointer
+								pixelToVector,				// pixel function pointer
+								output_worldP
+							));
+
+							
+						}
 						
-
-						// Initialize the vector
-						// Note: 'imgRedDataVector.reserve(input_worldP->height * input_worldP->width);' won't work.
-						/*for (A_long i = 0; i < input_worldP->width; i++) {
-							infoP->tmpVectorR.push_back(0);
-						}
-
-						infoP->fftState = 0;
-						for (A_long row = 0; row < input_worldP->height; row++) {
-							const PF_Rect currentColumn = {0, row, input_worldP->width, (row+1)}; //left, top, right, bottom;
-							ERR(suites.IterateFloatSuite1()->iterate(
-								in_data,
-								0,							// progress base
-								output_worldP->height,		// progress final
-								input_worldP,				// src
-								&currentColumn,				// area - null for all pixels
-								(void*)infoP,				// custom data pointer
-								pushPixelToVector,			// pixel function pointer
-								output_worldP
-							));
-
-							fft::transform(infoP->tmpVectorR);
-							imgRedDataVector.insert(std::end(imgRedDataVector), std::begin(infoP->tmpVectorR), std::end(infoP->tmpVectorR));
-						}
-
-						infoP->tmpVectorR.clear();
-						for (A_long i = 0; i < input_worldP->height; i++) {
-							infoP->tmpVectorR.push_back(0);
-						}
-
-						infoP->imgRedDataVector = &imgRedDataVector;
-						for (A_long col = 0; col < input_worldP->width; col++) {
-							infoP->fftState = 1;
-							const PF_Rect currentRow = { col, 0, (col + 1), input_worldP->height }; //left, top, right, bottom;
-							ERR(suites.IterateFloatSuite1()->iterate(
-								in_data,
-								0,							// progress base
-								output_worldP->height,		// progress final
-								input_worldP,				// src
-								&currentRow,				// area - null for all pixels
-								(void*)infoP,				// custom data pointer
-								pushPixelToVector,			// pixel function pointer
-								output_worldP
-							));
-							fft::transform(infoP->tmpVectorR);
-
-							infoP->fftState = 2;
-							ERR(suites.IterateFloatSuite1()->iterate(
-								in_data,
-								0,							// progress base
-								output_worldP->height,		// progress final
-								input_worldP,				// src
-								&currentRow,				// area - null for all pixels
-								(void*)infoP,				// custom data pointer
-								pushPixelToVector,			// pixel function pointer
-								output_worldP
-							));
-						}
-
-
-						ERR(suites.IterateFloatSuite1()->iterate(
-							in_data,
-							0,							// progress base
-							output_worldP->height,		// progress final
-							input_worldP,				// src
-							NULL,						// area - null for all pixels
-							(void*)infoP,				// custom data pointer
-							normalizeImg,				// pixel function pointer
-							output_worldP
-						));*/
-
-						//AEGP_IterateGeneric
-						infoP->imgVectorR.resize(imgSize);
-						infoP->imgVectorG.resize(imgSize);
-						infoP->imgVectorB.resize(imgSize);
-
-						// Get the pixels and build a vector with it.
-						ERR(suites.IterateFloatSuite1()->iterate(
-							in_data,
-							0,							// progress base
-							output_worldP->height,		// progress final
-							input_worldP,				// src
-							NULL,						// area - null for all pixels
-							(void*)infoP,				// custom data pointer
-							pixelToVector,				// pixel function pointer
-							output_worldP
-						));
-
 						// -------------- Let's transform every row using thread --------------
-						const unsigned int numOfThreads = 16;
+						const unsigned int numOfThreads = 4;// 16;
 						std::thread threads[numOfThreads];
 						int thPernTh = infoP->imgHeight / numOfThreads;
 						int remainderTh = infoP->imgHeight % numOfThreads;
 
-						for ( int count = 0; count < thPernTh; count++) {
-							for ( int nTh = 0; nTh < numOfThreads; nTh++) {
+						for (int count = 0; count < thPernTh; count++) {
+							for (int nTh = 0; nTh < numOfThreads; nTh++) {
 								A_long currentRow = (count*numOfThreads) + nTh;
 
-								threads[nTh] = std::thread(transformRow, &infoP->imgVectorR, &infoP->imgVectorG, &infoP->imgVectorB, currentRow, infoP->imgWidth);
+								threads[nTh] = std::thread(transformRow, &infoP->imgVectorR, &infoP->imgVectorG, &infoP->imgVectorB, currentRow, infoP->imgWidth, infoP->inverseCB);
 							}
 
 							for (unsigned int nTh = 0; nTh < numOfThreads; nTh++) {
@@ -308,7 +248,7 @@ SmartRender(
 						// Let's compute the remainder
 						for (int count = 0; count < remainderTh; count++) {
 							A_long currentRow = (thPernTh*numOfThreads) + count;
-							transformRow(&infoP->imgVectorR, &infoP->imgVectorG, &infoP->imgVectorB, currentRow, infoP->imgWidth);
+							transformRow(&infoP->imgVectorR, &infoP->imgVectorG, &infoP->imgVectorB, currentRow, infoP->imgWidth, infoP->inverseCB);
 						}
 
 						// -------------- Let's trasform every column with thread --------------
@@ -319,7 +259,7 @@ SmartRender(
 							for (int nTh = 0; nTh < numOfThreads; nTh++) {
 								A_long currentColumn = (count*numOfThreads) + nTh;
 
-								threads[nTh] = std::thread(transformColumn, &infoP->imgVectorR, &infoP->imgVectorG, &infoP->imgVectorB, currentColumn, infoP->imgWidth, infoP->imgHeight);
+								threads[nTh] = std::thread(transformColumn, &infoP->imgVectorR, &infoP->imgVectorG, &infoP->imgVectorB, currentColumn, infoP->imgWidth, infoP->imgHeight, infoP->inverseCB);
 							}
 
 							for (unsigned int nTh = 0; nTh < numOfThreads; nTh++) {
@@ -330,45 +270,54 @@ SmartRender(
 						// Let's compute the remainder
 						for (int count = 0; count < remainderTh; count++) {
 							A_long currentColumn = (thPernTh*numOfThreads) + count;
-							transformColumn(&infoP->imgVectorR, &infoP->imgVectorG, &infoP->imgVectorB, currentColumn, infoP->imgWidth, infoP->imgHeight);
+							transformColumn(&infoP->imgVectorR, &infoP->imgVectorG, &infoP->imgVectorB, currentColumn, infoP->imgWidth, infoP->imgHeight, infoP->inverseCB);
+						}
+						
+						if (!infoP->inverseCB) {
+							infoP->fftComputed = true;
 						}
 
-						// Put the values in the vector back to the image, also get the max in order to normalize later
-						ERR(suites.IterateFloatSuite1()->iterate(
-							in_data,
-							0,							// progress base
-							output_worldP->height,		// progress final
-							input_worldP,				// src
-							NULL,						// area - null for all pixels
-							(void*)infoP,				// custom data pointer
-							vectorToPixel,				// pixel function pointer
-							output_worldP
-						));
+						if (infoP->fftComputed) {
+							// Put the values in the vector back to the image, also get the max in order to normalize later
+							ERR(suites.IterateFloatSuite1()->iterate(
+								in_data,
+								0,							// progress base
+								output_worldP->height,		// progress final
+								input_worldP,				// src
+								NULL,						// area - null for all pixels
+								(void*)infoP,				// custom data pointer
+								vectorToPixel,				// pixel function pointer
+								output_worldP
+							));
+						}
 
-						// Normalize the image
-						ERR(suites.IterateFloatSuite1()->iterate(
-							in_data,
-							0,							// progress base
-							output_worldP->height,		// progress final
-							input_worldP,				// src
-							NULL,						// area - null for all pixels
-							(void*)infoP,				// custom data pointer
-							normalizeImg,				// pixel function pointer
-							output_worldP
-						));
+						if (!infoP->inverseCB) {
+							// Normalize the image
+							ERR(suites.IterateFloatSuite1()->iterate(
+								in_data,
+								0,							// progress base
+								output_worldP->height,		// progress final
+								input_worldP,				// src
+								NULL,						// area - null for all pixels
+								(void*)infoP,				// custom data pointer
+								normalizeImg,				// pixel function pointer
+								output_worldP
+							));
 
-						// Circular shift
-						infoP->tmpOutput = output_worldP;
-						ERR(suites.IterateFloatSuite1()->iterate(
-							in_data,
-							0,							// progress base
-							output_worldP->height,		// progress final
-							input_worldP,				// src
-							NULL,						// area - null for all pixels
-							(void*)infoP,				// custom data pointer
-							circularShift,				// pixel function pointer
-							output_worldP
-						));
+							// Circular shift
+							infoP->tmpOutput = output_worldP;
+							ERR(suites.IterateFloatSuite1()->iterate(
+								in_data,
+								0,							// progress base
+								output_worldP->height,		// progress final
+								input_worldP,				// src
+								NULL,						// area - null for all pixels
+								(void*)infoP,				// custom data pointer
+								circularShift,				// pixel function pointer
+								output_worldP
+							));
+						}
+						
 
 						break;
 					}

@@ -56,13 +56,15 @@ const std::string   strName = "rmFourier",
 // RM-NOTE: parameter UI order
 enum {
 	RMFOURIER_INPUT = 0,
+	RMFOURIER_CHECK_LAYER,
 	RMFOURIER_INVERSE_FFT,
 	RMFOURIER_NUM_PARAMS
 };
 
 // RM-NOTE: parameter disk order
 enum {
-	INVERSE_FFT_DISK_ID = 1,
+	CHECK_LAYER_DISK_ID = 1,
+	INVERSE_FFT_DISK_ID
 };
 
 typedef struct {
@@ -70,9 +72,11 @@ typedef struct {
 	PF_SampPB							samp_pb;
 	PF_InData							in_data;
 	PF_Boolean							no_opB;
+	PF_LayerDef							*phaseLayer;
 	PF_EffectWorld						*tmpOutput;
 
 	bool								inverseCB;
+	bool								fftComputed = false;
 	std::vector<std::complex<double>>	tmpVectorR,
 										imgVectorR, imgVectorG, imgVectorB,
 										*imgRedDataVector;////, imgGreenDataVector, imgBlueDataVector, 
@@ -145,7 +149,8 @@ void transformRow(
 	std::vector<std::complex<double>> *imgDataVecG,
 	std::vector<std::complex<double>> *imgDataVecB,
 	A_long row,
-	A_long imgWidth);
+	A_long imgWidth,
+	bool inv);
 
 void transformColumn(
 	std::vector<std::complex<double>> *imgDataVecR,
@@ -153,6 +158,7 @@ void transformColumn(
 	std::vector<std::complex<double>> *imgDataVecB,
 	A_long col,
 	A_long imgWidth,
-	A_long imgHeight);
+	A_long imgHeight,
+	bool inv);
 
 #endif // RMFOURIER_H

@@ -274,13 +274,22 @@ vectorToPixel(
 
 	A_long currentIndex = (yL * siP->in_data.width) + xL;
 
-	PF_FpShort finalR = log(1 + abs(siP->imgVectorR[currentIndex]));
-	PF_FpShort finalG = log(1 + abs(siP->imgVectorG[currentIndex]));
-	PF_FpShort finalB = log(1 + abs(siP->imgVectorB[currentIndex]));
+	PF_FpShort finalR, finalG, finalB;
 
-	if (finalR > siP->rMax) siP->rMax = finalR;
-	if (finalR > siP->gMax) siP->gMax = finalG;
-	if (finalR > siP->bMax) siP->bMax = finalB;
+	if (!siP->inverseCB) {
+		finalR = log(1 + abs(siP->imgVectorR[currentIndex]));
+		finalG = log(1 + abs(siP->imgVectorG[currentIndex]));
+		finalB = log(1 + abs(siP->imgVectorB[currentIndex]));
+
+		if (finalR > siP->rMax) siP->rMax = finalR;
+		if (finalR > siP->gMax) siP->gMax = finalG;
+		if (finalR > siP->bMax) siP->bMax = finalB;
+	}
+	else {
+		finalR = abs(siP->imgVectorR[currentIndex]);
+		finalG = abs(siP->imgVectorG[currentIndex]);
+		finalB = abs(siP->imgVectorB[currentIndex]);
+	}
 
 	outP->alpha = 1;
 	outP->red = finalR;
@@ -295,7 +304,8 @@ void transformRow(
 	std::vector<std::complex<double>> *imgDataVecG,
 	std::vector<std::complex<double>> *imgDataVecB,
 	A_long row, 
-	A_long imgWidth) {
+	A_long imgWidth,
+	bool inv) {
 
 	std::vector<std::complex<double>> currentRowVecR, currentRowVecG, currentRowVecB;
 
@@ -306,9 +316,16 @@ void transformRow(
 		currentRowVecB.push_back((*imgDataVecB)[currentIndex]);
 	}
 
-	fft::transform(currentRowVecR);
-	fft::transform(currentRowVecG);
-	fft::transform(currentRowVecB);
+	if (!inv) {
+		fft::transform(currentRowVecR);
+		fft::transform(currentRowVecG);
+		fft::transform(currentRowVecB);
+	}
+	else {
+		fft::inverseTransform(currentRowVecR);
+		fft::inverseTransform(currentRowVecG);
+		fft::inverseTransform(currentRowVecB);
+	}
 
 	for (A_long i = 0; i < imgWidth; i++) {
 		A_long currentIndex = (imgWidth*row) + i;
@@ -324,7 +341,8 @@ void transformColumn(
 	std::vector<std::complex<double>> *imgDataVecB, 
 	A_long col, 
 	A_long imgWidth, 
-	A_long imgHeight) {
+	A_long imgHeight,
+	bool inv) {
 
 	std::vector<std::complex<double>> currentColVecR, currentColVecG, currentColVecB;
 
@@ -335,9 +353,16 @@ void transformColumn(
 		currentColVecB.push_back((*imgDataVecB)[currentIndex]);
 	}
 
-	fft::transform(currentColVecR);
-	fft::transform(currentColVecG);
-	fft::transform(currentColVecB);
+	if (!inv) {
+		fft::transform(currentColVecR);
+		fft::transform(currentColVecG);
+		fft::transform(currentColVecB);
+	}
+	else {
+		fft::inverseTransform(currentColVecR);
+		fft::inverseTransform(currentColVecG);
+		fft::inverseTransform(currentColVecB);
+	}
 
 	for (A_long i = 0; i < imgHeight; i++) {
 		A_long currentIndex = (imgWidth*i) + col;
