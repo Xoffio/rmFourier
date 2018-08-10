@@ -51,10 +51,13 @@ ParamsSetup (
 	PF_ParamDef	def;	
 
 	AEFX_CLR_STRUCT(def);
-	PF_ADD_LAYER("Select layer", PF_LayerDefault_NONE, CHECK_LAYER_DISK_ID);
+	PF_ADD_LAYER("Select layer", PF_LayerDefault_NONE, PHASE_LAYER_DISK_ID);
 
 	AEFX_CLR_STRUCT(def);
 	PF_ADD_CHECKBOX("Inverse", "Calculate inverse Fourier transform", FALSE, 0, INVERSE_FFT_DISK_ID);
+
+	AEFX_CLR_STRUCT(def);
+	PF_ADD_CHECKBOX("Phase", "Get the phase from the Fourier transform", FALSE, 0, FFT_PHASE_DISK_ID);
 	
 	out_data->num_params = RMFOURIER_NUM_PARAMS;
 
@@ -81,9 +84,9 @@ PreRender(
 	PF_PreRenderExtra	*extra)
 {
 	PF_Err err = PF_Err_NONE;
-	PF_ParamDef inverseFftParam, checkoutLayerParam;
+	PF_ParamDef inverseFftParam, phaseParam;
 	PF_RenderRequest req = extra->input->output_request;
-	PF_CheckoutResult in_result;
+	PF_CheckoutResult in_result, phase_result;
 
 	AEGP_SuiteHandler suites(in_data->pica_basicP);
 
@@ -100,15 +103,6 @@ PreRender(
 			AEFX_CLR_STRUCT(inverseFftParam);
 			ERR(PF_CHECKOUT_PARAM(
 				in_data,
-				RMFOURIER_CHECK_LAYER,
-				in_data->current_time,//(in_data->current_time + params[CHECK_FRAME]->u.sd.value * in_data->time_step),
-				in_data->time_step,
-				in_data->time_scale,
-				&checkoutLayerParam));
-
-			AEFX_CLR_STRUCT(inverseFftParam);
-			ERR(PF_CHECKOUT_PARAM(
-				in_data,
 				RMFOURIER_INVERSE_FFT,
 				in_data->current_time,
 				in_data->time_step,
@@ -116,20 +110,38 @@ PreRender(
 				&inverseFftParam
 			));
 
+			AEFX_CLR_STRUCT(phaseParam);
+			ERR(PF_CHECKOUT_PARAM(
+				in_data,
+				RMFOURIER_FFT_PHASE,
+				in_data->current_time,
+				in_data->time_step,
+				in_data->time_scale,
+				&phaseParam
+			));
+
 			if (!err) {
 				req.preserve_rgb_of_zero_alpha = FALSE;	
 				req.field = PF_Field_FRAME;				
 
-				ERR(extra->cb->checkout_layer(
-					in_data->effect_ref,
-					RMFOURIER_INPUT,
-					RMFOURIER_INPUT,
-					&req,
-					in_data->current_time,
-					in_data->time_step,
-					in_data->time_scale,
-					&in_result
-				));
+				// Checkout layers
+				ERR(extra->cb->checkout_layer(  in_data->effect_ref,
+												RMFOURIER_INPUT,
+												RMFOURIER_INPUT,
+												&req,
+												in_data->current_time,
+												in_data->time_step,
+												in_data->time_scale,
+												&in_result ));
+
+				ERR(extra->cb->checkout_layer(  in_data->effect_ref,
+												RMFOURIER_PHASE_LAYER,
+												RMFOURIER_PHASE_LAYER,
+												&req,
+												in_data->current_time,
+												in_data->time_step,
+												in_data->time_scale,
+												&phase_result));
 
 				if (!err) {
 					AEFX_CLR_STRUCT(*infoP);
@@ -137,7 +149,7 @@ PreRender(
 					infoP->inverseCB 	= inverseFftParam.u.bd.value;
 					infoP->imgWidth		= in_data->width;
 					infoP->imgHeight	= in_data->height;
-					infoP->phaseLayer	= &checkoutLayerParam.u.ld;
+					infoP->fftPhase = phaseParam.u.bd.value;
 
 					UnionLRect(&in_result.result_rect, &extra->output->result_rect);
 					UnionLRect(&in_result.max_result_rect, &extra->output->max_result_rect);
@@ -169,9 +181,11 @@ SmartRender(
 
 	AEGP_SuiteHandler 	suites(in_data->pica_basicP);
 	PF_EffectWorld		*input_worldP = NULL,
-						*output_worldP = NULL;
+						*output_worldP = NULL,
+						*phase_worldP = NULL;
 	PF_WorldSuite2		*wsP = NULL;
 	PF_PixelFormat		format = PF_PixelFormat_INVALID;
+	PF_ParamDef			phaseLayerParam;
 
 	PF_Point			origin;
 
@@ -181,6 +195,7 @@ SmartRender(
 		if (!infoP->no_opB) {
 			// checkout input & output buffers.
 			ERR((extra->cb->checkout_layer_pixels(in_data->effect_ref, RMFOURIER_INPUT, &input_worldP)));
+			ERR((extra->cb->checkout_layer_pixels(in_data->effect_ref, RMFOURIER_PHASE_LAYER, &phase_worldP)));
 			ERR(extra->cb->checkout_output(in_data->effect_ref, &output_worldP));
 
 			if (!err && output_worldP) {
@@ -191,9 +206,22 @@ SmartRender(
 					"Couldn't load suite.",
 					(void**)&wsP));
 
+				// Checkout params
+				AEFX_CLR_STRUCT(phaseLayerParam);
+				ERR(PF_CHECKOUT_PARAM(
+					in_data,
+					RMFOURIER_PHASE_LAYER,
+					in_data->current_time,//(in_data->current_time + params[CHECK_FRAME]->u.sd.value * in_data->time_step),
+					in_data->time_step,
+					in_data->time_scale,
+					&phaseLayerParam));
+
 				infoP->ref = in_data->effect_ref;
 				infoP->samp_pb.src = input_worldP;
 				infoP->in_data = *in_data;
+
+				// Checkin params
+				ERR2(PF_CHECKIN_PARAM(in_data, &phaseLayerParam));
 
 				ERR(wsP->PF_GetPixelFormat(input_worldP, &format));
 
@@ -217,7 +245,7 @@ SmartRender(
 								in_data,
 								0,							// progress base
 								output_worldP->height,		// progress final
-								infoP->phaseLayer,				// src
+								input_worldP,				// src
 								NULL,						// area - null for all pixels
 								(void*)infoP,				// custom data pointer
 								pixelToVector,				// pixel function pointer
@@ -291,7 +319,7 @@ SmartRender(
 							));
 						}
 
-						if (!infoP->inverseCB) {
+						if (!infoP->inverseCB && !infoP->fftPhase) {
 							// Normalize the image
 							ERR(suites.IterateFloatSuite1()->iterate(
 								in_data,

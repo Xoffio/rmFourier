@@ -56,15 +56,17 @@ const std::string   strName = "rmFourier",
 // RM-NOTE: parameter UI order
 enum {
 	RMFOURIER_INPUT = 0,
-	RMFOURIER_CHECK_LAYER,
+	RMFOURIER_PHASE_LAYER,
 	RMFOURIER_INVERSE_FFT,
+	RMFOURIER_FFT_PHASE,
 	RMFOURIER_NUM_PARAMS
 };
 
 // RM-NOTE: parameter disk order
 enum {
-	CHECK_LAYER_DISK_ID = 1,
-	INVERSE_FFT_DISK_ID
+	PHASE_LAYER_DISK_ID = 1,
+	INVERSE_FFT_DISK_ID,
+	FFT_PHASE_DISK_ID
 };
 
 typedef struct {
@@ -72,11 +74,12 @@ typedef struct {
 	PF_SampPB							samp_pb;
 	PF_InData							in_data;
 	PF_Boolean							no_opB;
-	PF_LayerDef							*phaseLayer;
 	PF_EffectWorld						*tmpOutput;
 
-	bool								inverseCB;
+	bool								inverseCB,
+										fftPhase;
 	bool								fftComputed = false;
+	
 	std::vector<std::complex<double>>	tmpVectorR,
 										imgVectorR, imgVectorG, imgVectorB,
 										*imgRedDataVector;////, imgGreenDataVector, imgBlueDataVector, 

@@ -277,13 +277,21 @@ vectorToPixel(
 	PF_FpShort finalR, finalG, finalB;
 
 	if (!siP->inverseCB) {
-		finalR = log(1 + abs(siP->imgVectorR[currentIndex]));
-		finalG = log(1 + abs(siP->imgVectorG[currentIndex]));
-		finalB = log(1 + abs(siP->imgVectorB[currentIndex]));
+		if (!siP->fftPhase) {
+			finalR = log(1 + abs(siP->imgVectorR[currentIndex]));
+			finalG = log(1 + abs(siP->imgVectorG[currentIndex]));
+			finalB = log(1 + abs(siP->imgVectorB[currentIndex]));
 
-		if (finalR > siP->rMax) siP->rMax = finalR;
-		if (finalR > siP->gMax) siP->gMax = finalG;
-		if (finalR > siP->bMax) siP->bMax = finalB;
+			if (finalR > siP->rMax) siP->rMax = finalR;
+			if (finalR > siP->gMax) siP->gMax = finalG;
+			if (finalR > siP->bMax) siP->bMax = finalB;
+		}
+		else {
+			finalR = atan2(siP->imgVectorR[currentIndex].imag(), siP->imgVectorR[currentIndex].real());
+			finalG = atan2(siP->imgVectorG[currentIndex].imag(), siP->imgVectorR[currentIndex].real());
+			finalB = atan2(siP->imgVectorB[currentIndex].imag(), siP->imgVectorR[currentIndex].real());
+		}
+		
 	}
 	else {
 		finalR = abs(siP->imgVectorR[currentIndex]);
