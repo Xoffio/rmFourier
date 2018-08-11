@@ -87,6 +87,8 @@ typedef struct {
 	unsigned int						fftState; // 0= Columns, 1= Rows 
 	double								rMax, gMax, bMax;
 	A_long								imgWidth, imgHeight;
+	A_long								nMaxThreads;
+	int tmpCount, tmpMax;
 } rmFourierInfo;
 
 
@@ -163,5 +165,19 @@ void transformColumn(
 	A_long imgWidth,
 	A_long imgHeight,
 	bool inv);
+
+PF_Err
+fftRowsTh(
+	void *refcon,
+	A_long threadNum,
+	A_long iterationCount,
+	A_long numOfIterations);
+
+PF_Err
+fftColumnsTh(
+	void *refcon,
+	A_long threadNum,
+	A_long iterationCount,
+	A_long numOfIterations);
 
 #endif // RMFOURIER_H

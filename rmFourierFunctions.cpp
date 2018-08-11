@@ -379,3 +379,43 @@ void transformColumn(
 		imgDataVecB->operator[](currentIndex) = currentColVecB[i];
 	}
 }
+
+
+PF_Err
+fftRowsTh(
+	void *refcon,
+	A_long threadNum,
+	A_long iterationCount,
+	A_long numOfIterations)
+{
+	PF_Err err = PF_Err_NONE;
+	register rmFourierInfo	*siP = (rmFourierInfo*)refcon;
+
+	AEGP_SuiteHandler suites(siP->in_data.pica_basicP);
+
+	siP->tmpCount = siP->tmpCount + 1;
+	if (threadNum > siP->tmpMax) siP->tmpMax = threadNum;
+
+
+	A_long currentRow = threadNum + (siP->nMaxThreads * iterationCount);
+	transformRow(&siP->imgVectorR, &siP->imgVectorG, &siP->imgVectorB, iterationCount, siP->imgWidth, siP->inverseCB);
+
+	return err;
+}
+
+PF_Err
+fftColumnsTh(
+	void *refcon,
+	A_long threadNum,
+	A_long iterationCount,
+	A_long numOfIterations)
+{
+	PF_Err err = PF_Err_NONE;
+	register rmFourierInfo	*siP = (rmFourierInfo*)refcon;
+
+	AEGP_SuiteHandler suites(siP->in_data.pica_basicP);
+
+	transformColumn(&siP->imgVectorR, &siP->imgVectorG, &siP->imgVectorB, iterationCount, siP->imgWidth, siP->imgHeight, siP->inverseCB);
+
+	return err;
+}

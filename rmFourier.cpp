@@ -147,8 +147,8 @@ PreRender(
 					AEFX_CLR_STRUCT(*infoP);
 					// Here you get the input values
 					infoP->inverseCB 	= inverseFftParam.u.bd.value;
-					infoP->imgWidth		= in_data->width;
-					infoP->imgHeight	= in_data->height;
+					//infoP->imgWidth		= in_data->width;
+					//infoP->imgHeight	= in_data->height;
 					infoP->fftPhase = phaseParam.u.bd.value;
 
 					UnionLRect(&in_result.result_rect, &extra->output->result_rect);
@@ -233,73 +233,49 @@ SmartRender(
 
 					case PF_PixelFormat_ARGB128: {
 						A_long imgSize = input_worldP->width * input_worldP->height;
+						infoP->imgWidth = input_worldP->width;
+						infoP->imgHeight = input_worldP->height;
 
-						if (!infoP->inverseCB) {
-							//AEGP_IterateGeneric
-							infoP->imgVectorR.resize(imgSize);
-							infoP->imgVectorG.resize(imgSize);
-							infoP->imgVectorB.resize(imgSize);
 
-							// Make a vector from the image pixels.
-							ERR(suites.IterateFloatSuite1()->iterate(
-								in_data,
-								0,							// progress base
-								output_worldP->height,		// progress final
-								input_worldP,				// src
-								NULL,						// area - null for all pixels
-								(void*)infoP,				// custom data pointer
-								pixelToVector,				// pixel function pointer
-								output_worldP
-							));
+						//AEGP_IterateGeneric
+						infoP->imgVectorR.resize(imgSize);
+						infoP->imgVectorG.resize(imgSize);
+						infoP->imgVectorB.resize(imgSize);
 
-							
-						}
+						// Make a vector from the image pixels.
+						ERR(suites.IterateFloatSuite1()->iterate(
+							in_data,
+							0,							// progress base
+							output_worldP->height,		// progress final
+							input_worldP,				// src
+							NULL,						// area - null for all pixels
+							(void*)infoP,				// custom data pointer
+							pixelToVector,				// pixel function pointer
+							output_worldP
+						));
+
+						//
+						A_long	iterPerImage = 0;
+						ERR(suites.IterateSuite1()->AEGP_GetNumThreads(&infoP->nMaxThreads));
+						iterPerImage = infoP->imgHeight / infoP->nMaxThreads;
+						infoP->tmpCount = 0;
+						infoP->tmpMax = 0;
+
+						ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
+							input_worldP->height,
+							(void*)infoP,
+							fftRowsTh));
+
+						ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
+							input_worldP->height,
+							(void*)infoP,
+							fftColumnsTh));
 						
 						// -------------- Let's transform every row using thread --------------
 						const unsigned int numOfThreads = 4;// 16;
 						std::thread threads[numOfThreads];
 						int thPernTh = infoP->imgHeight / numOfThreads;
 						int remainderTh = infoP->imgHeight % numOfThreads;
-
-						for (int count = 0; count < thPernTh; count++) {
-							for (int nTh = 0; nTh < numOfThreads; nTh++) {
-								A_long currentRow = (count*numOfThreads) + nTh;
-
-								threads[nTh] = std::thread(transformRow, &infoP->imgVectorR, &infoP->imgVectorG, &infoP->imgVectorB, currentRow, infoP->imgWidth, infoP->inverseCB);
-							}
-
-							for (unsigned int nTh = 0; nTh < numOfThreads; nTh++) {
-								threads[nTh].join();
-							}
-						}
-
-						// Let's compute the remainder
-						for (int count = 0; count < remainderTh; count++) {
-							A_long currentRow = (thPernTh*numOfThreads) + count;
-							transformRow(&infoP->imgVectorR, &infoP->imgVectorG, &infoP->imgVectorB, currentRow, infoP->imgWidth, infoP->inverseCB);
-						}
-
-						// -------------- Let's trasform every column with thread --------------
-						thPernTh = infoP->imgWidth / numOfThreads;
-						remainderTh = infoP->imgWidth % numOfThreads;
-
-						for (int count = 0; count < thPernTh; count++) {
-							for (int nTh = 0; nTh < numOfThreads; nTh++) {
-								A_long currentColumn = (count*numOfThreads) + nTh;
-
-								threads[nTh] = std::thread(transformColumn, &infoP->imgVectorR, &infoP->imgVectorG, &infoP->imgVectorB, currentColumn, infoP->imgWidth, infoP->imgHeight, infoP->inverseCB);
-							}
-
-							for (unsigned int nTh = 0; nTh < numOfThreads; nTh++) {
-								threads[nTh].join();
-							}
-						}
-
-						// Let's compute the remainder
-						for (int count = 0; count < remainderTh; count++) {
-							A_long currentColumn = (thPernTh*numOfThreads) + count;
-							transformColumn(&infoP->imgVectorR, &infoP->imgVectorG, &infoP->imgVectorB, currentColumn, infoP->imgWidth, infoP->imgHeight, infoP->inverseCB);
-						}
 						
 						if (!infoP->inverseCB) {
 							infoP->fftComputed = true;
@@ -319,6 +295,7 @@ SmartRender(
 							));
 						}
 
+						// If I want to get the magnitude only
 						if (!infoP->inverseCB && !infoP->fftPhase) {
 							// Normalize the image
 							ERR(suites.IterateFloatSuite1()->iterate(
