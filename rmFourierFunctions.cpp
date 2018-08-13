@@ -143,41 +143,6 @@ PF_EffectWorld tmpFourier(PF_EffectWorld inWorld) {
 }
 
 PF_Err
-pushPixelToVector(
-	void			*refcon,
-	A_long 			xL,
-	A_long 			yL,
-	PF_PixelFloat 	*inP,
-	PF_PixelFloat 	*outP)
-{
-	register rmFourierInfo	*siP = (rmFourierInfo*)refcon;
-	PF_Err				err = PF_Err_NONE;
-
-	AEGP_SuiteHandler suites(siP->in_data.pica_basicP);
-
-
-	if (siP->fftState == 0) {
-		siP->tmpVectorR.operator[](xL) = inP->red;
-	}
-	if (siP->fftState == 1) {
-		A_long currentIndex = (yL*siP->in_data.width) + xL;
-		siP->tmpVectorR.operator[](yL) = siP->imgRedDataVector->operator[](currentIndex);
-	}
-	if (siP->fftState == 2) {
-
-		outP->alpha = inP->alpha;
-		outP->red = log(1 + abs(siP->tmpVectorR.operator[](yL)));
-		outP->green = inP->green;
-		outP->blue = inP->blue;
-
-		if (outP->red > siP->rMax) siP->rMax = outP->red;
-	}
-
-
-	return err;
-}
-
-PF_Err
 normalizeImg(
 	void			*refcon,
 	A_long 			xL,
@@ -216,23 +181,25 @@ circularShift(
 	A_long wHalf = siP->imgWidth / 2;
 	A_long hHalf = siP->imgHeight / 2;
 
-	if ((xL < wHalf) && (yL < hHalf)) {
-		xL2 = xL + wHalf;
-		yL2 = yL + hHalf;
-	}
-	if ((xL < wHalf) && (yL >= hHalf)) {
-		xL2 = xL + wHalf;
-		yL2 = yL - hHalf;
-	}
+	if (yL < hHalf) yL2 = yL + hHalf;
+	else yL2 = yL - hHalf;
 
-	unsigned long dstPointAt = (yL2 * siP->imgWidth) + xL2;
+	if (xL < wHalf) {
+		xL2 = xL + wHalf;
 
-	PF_PixelFloat *pixelPointerAt = (PF_PixelFloat*)((char*)siP->tmpOutput->data + (dstPointAt * sizeof(PF_PixelFloat)));
-	PF_PixelFloat tmpPixel = *outP;
+		unsigned long dstPointAt = (yL2 * siP->imgWidth) + xL2;
+
+		PF_PixelFloat *pixelPointerAt = (PF_PixelFloat*)((char*)siP->output_worldP->data + (dstPointAt * sizeof(PF_PixelFloat)));
+		PF_PixelFloat tmpPixel = *inP;
+
+		if (!siP->inverseCB) *outP = *pixelPointerAt;
+		else {
+			*outP = *(PF_PixelFloat*)((char*)siP->input_worldP->data + (dstPointAt * sizeof(PF_PixelFloat)));
+		}
+
+		*pixelPointerAt = tmpPixel;
+	}
 	
-	*outP = *pixelPointerAt;
-	*pixelPointerAt = tmpPixel;
-
 	return err;
 }
 

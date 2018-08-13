@@ -74,16 +74,15 @@ typedef struct {
 	PF_SampPB							samp_pb;
 	PF_InData							in_data;
 	PF_Boolean							no_opB;
-	PF_EffectWorld						*tmpOutput;
+	PF_EffectWorld						*output_worldP,
+										*input_worldP;
 
 	bool								inverseCB,
 										fftPhase;
-	bool								fftComputed = false;
 	
 	std::vector<std::complex<double>>	tmpVectorR,
 										imgVectorR, imgVectorG, imgVectorB,
-										*imgRedDataVector;////, imgGreenDataVector, imgBlueDataVector, 
-										//finalImgGreenDataVector;
+										phaseVectorR, phaseVectorG, phaseVectorB;
 	unsigned int						fftState; // 0= Columns, 1= Rows 
 	double								rMax, gMax, bMax;
 	A_long								imgWidth, imgHeight;
@@ -108,14 +107,6 @@ static PF_PixelFloat
 *getXY32(PF_EffectWorld &def, int x, int y);
 
 PF_EffectWorld tmpFourier(PF_EffectWorld inWorld);
-
-PF_Err
-pushPixelToVector(
-	void			*refcon,
-	A_long 			xL,
-	A_long 			yL,
-	PF_PixelFloat 	*inP,
-	PF_PixelFloat 	*outP);
 
 PF_Err
 normalizeImg(

@@ -219,6 +219,8 @@ SmartRender(
 				infoP->ref = in_data->effect_ref;
 				infoP->samp_pb.src = input_worldP;
 				infoP->in_data = *in_data;
+				infoP->input_worldP = input_worldP;
+				infoP->output_worldP = output_worldP;
 
 				// Checkin params
 				ERR2(PF_CHECKIN_PARAM(in_data, &phaseLayerParam));
@@ -236,12 +238,25 @@ SmartRender(
 						infoP->imgWidth = input_worldP->width;
 						infoP->imgHeight = input_worldP->height;
 
+						if (infoP->inverseCB) {
+							// Circular shift
+							ERR(suites.IterateFloatSuite1()->iterate(
+								in_data,
+								0,							// progress base
+								output_worldP->height,		// progress final
+								input_worldP,				// src
+								NULL,						// area - null for all pixels
+								(void*)infoP,				// custom data pointer
+								circularShift,				// pixel function pointer
+								output_worldP
+							));
+						}
 
 						//AEGP_IterateGeneric
 						infoP->imgVectorR.resize(imgSize);
 						infoP->imgVectorG.resize(imgSize);
 						infoP->imgVectorB.resize(imgSize);
-
+						
 						// Make a vector from the image pixels.
 						ERR(suites.IterateFloatSuite1()->iterate(
 							in_data,
@@ -253,35 +268,22 @@ SmartRender(
 							pixelToVector,				// pixel function pointer
 							output_worldP
 						));
-
-						//
-						A_long	iterPerImage = 0;
-						ERR(suites.IterateSuite1()->AEGP_GetNumThreads(&infoP->nMaxThreads));
-						iterPerImage = infoP->imgHeight / infoP->nMaxThreads;
-						infoP->tmpCount = 0;
-						infoP->tmpMax = 0;
-
-						ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
-							input_worldP->height,
-							(void*)infoP,
-							fftRowsTh));
-
-						ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
-							input_worldP->height,
-							(void*)infoP,
-							fftColumnsTh));
-						
-						// -------------- Let's transform every row using thread --------------
-						const unsigned int numOfThreads = 4;// 16;
-						std::thread threads[numOfThreads];
-						int thPernTh = infoP->imgHeight / numOfThreads;
-						int remainderTh = infoP->imgHeight % numOfThreads;
 						
 						if (!infoP->inverseCB) {
-							infoP->fftComputed = true;
-						}
+							ERR(suites.IterateSuite1()->AEGP_GetNumThreads(&infoP->nMaxThreads));
 
-						if (infoP->fftComputed) {
+							// FFT the Rows
+							ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
+								input_worldP->height,
+								(void*)infoP,
+								fftRowsTh));
+
+							// FFT the columns
+							ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
+								input_worldP->height,
+								(void*)infoP,
+								fftColumnsTh));
+
 							// Put the values in the vector back to the image, also get the max in order to normalize later
 							ERR(suites.IterateFloatSuite1()->iterate(
 								in_data,
@@ -293,6 +295,26 @@ SmartRender(
 								vectorToPixel,				// pixel function pointer
 								output_worldP
 							));
+						}
+						else {
+							if (phase_worldP) {
+
+								/*infoP->phaseVectorR.resize(imgSize);
+								infoP->phaseVectorG.resize(imgSize);
+								infoP->phaseVectorB.resize(imgSize);*/
+
+								for (int row = 0; row < input_worldP->height; row++) {
+									for (int col = 0; col < input_worldP->width; col++) {
+										A_long dstPointAt = (row*input_worldP->width) + col;
+										PF_PixelFloat *pixelPointerAt = (PF_PixelFloat*)((char*)phase_worldP->data + (dstPointAt * sizeof(PF_PixelFloat)));
+										std::complex<double> tmpV(0, pixelPointerAt->red);
+
+										//infoP->phaseVectorR.push_back( exp(tmpV) );
+										infoP->imgVectorR[dstPointAt] = infoP->imgVectorR[dstPointAt] * exp(tmpV);
+									}
+								}
+								
+							}
 						}
 
 						// If I want to get the magnitude only
@@ -310,12 +332,11 @@ SmartRender(
 							));
 
 							// Circular shift
-							infoP->tmpOutput = output_worldP;
 							ERR(suites.IterateFloatSuite1()->iterate(
 								in_data,
 								0,							// progress base
 								output_worldP->height,		// progress final
-								input_worldP,				// src
+								output_worldP,				// src
 								NULL,						// area - null for all pixels
 								(void*)infoP,				// custom data pointer
 								circularShift,				// pixel function pointer
