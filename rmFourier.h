@@ -75,7 +75,8 @@ typedef struct {
 	PF_InData							in_data;
 	PF_Boolean							no_opB;
 	PF_EffectWorld						*output_worldP,
-										*input_worldP;
+										*input_worldP,
+										*tmp_worldP;
 
 	bool								inverseCB,
 										fftPhase;
@@ -126,11 +127,10 @@ circularShift(
 
 PF_Err
 pixelToVector(
-	void			*refcon,
-	A_long 			xL,
-	A_long 			yL,
-	PF_PixelFloat 	*inP,
-	PF_PixelFloat 	*outP);
+	void *refcon,
+	A_long threadNum,
+	A_long iterationCount,
+	A_long numOfIterations);
 
 PF_Err
 vectorToPixel(
@@ -139,23 +139,6 @@ vectorToPixel(
 	A_long 			yL,
 	PF_PixelFloat 	*inP,
 	PF_PixelFloat 	*outP);
-
-void transformRow(
-	std::vector<std::complex<double>> *imgDataVecR,
-	std::vector<std::complex<double>> *imgDataVecG,
-	std::vector<std::complex<double>> *imgDataVecB,
-	A_long row,
-	A_long imgWidth,
-	bool inv);
-
-void transformColumn(
-	std::vector<std::complex<double>> *imgDataVecR,
-	std::vector<std::complex<double>> *imgDataVecG,
-	std::vector<std::complex<double>> *imgDataVecB,
-	A_long col,
-	A_long imgWidth,
-	A_long imgHeight,
-	bool inv);
 
 PF_Err
 fftRowsTh(
@@ -166,6 +149,20 @@ fftRowsTh(
 
 PF_Err
 fftColumnsTh(
+	void *refcon,
+	A_long threadNum,
+	A_long iterationCount,
+	A_long numOfIterations);
+
+PF_Err
+ifftRowsTh(
+	void *refcon,
+	A_long threadNum,
+	A_long iterationCount,
+	A_long numOfIterations);
+
+PF_Err
+ifftColumnsTh(
 	void *refcon,
 	A_long threadNum,
 	A_long iterationCount,
