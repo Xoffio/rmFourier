@@ -413,7 +413,19 @@ SmartRender(
 							));
 						}
 						
-
+						if (infoP->inverseCB) {
+							// Normalize the image
+							ERR(suites.IterateFloatSuite1()->iterate(
+								in_data,
+								0,							// progress base
+								output_worldP->height,		// progress final
+								output_worldP,				// src
+								NULL,						// area - null for all pixels
+								(void*)infoP,				// custom data pointer
+								normalizeImg,				// pixel function pointer
+								output_worldP
+							));
+						}
 						break;
 					}
 						
