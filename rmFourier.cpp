@@ -313,6 +313,12 @@ SmartRender(
 								input_worldP->height,
 								(void*)infoP,
 								ifftRowsTh));
+
+							// FFT the columns
+							ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
+								input_worldP->height,
+								(void*)infoP,
+								ifftColumnsTh));
 						}
 
 						// Put the values in the vector back to the image, also get the max in order to normalize later

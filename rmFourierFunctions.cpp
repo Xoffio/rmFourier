@@ -286,6 +286,15 @@ vectorToPixel(
 		}
 		
 	}
+	else {
+		finalR = abs(siP->imgVectorR[currentIndex]);
+		finalG = abs(siP->imgVectorG[currentIndex]);
+		finalB = abs(siP->imgVectorB[currentIndex]);
+
+		if (finalR > siP->rMax) siP->rMax = finalR;
+		if (finalR > siP->gMax) siP->gMax = finalG;
+		if (finalR > siP->bMax) siP->bMax = finalB;
+	}
 	//else {
 		/*finalR = abs(siP->imgVectorR[currentIndex]);
 		finalG = abs(siP->imgVectorG[currentIndex]);
@@ -436,9 +445,9 @@ ifftRowsTh(
 		std::complex<double>	invR = exp(j * atan2(siP->imgVectorR[currentIndex].imag(), siP->imgVectorR[currentIndex].real())),
 								invG = exp(j * atan2(siP->imgVectorG[currentIndex].imag(), siP->imgVectorR[currentIndex].real())),
 								invB = exp(j * atan2(siP->imgVectorB[currentIndex].imag(), siP->imgVectorR[currentIndex].real())),
-								tmpR(pixelPointerAt->red, 0),
-								tmpG(pixelPointerAt->green, 0),
-								tmpB(pixelPointerAt->blue, 0);
+								tmpR = j * abs(siP->imgVectorR[currentIndex]),
+								tmpG = j * abs(siP->imgVectorG[currentIndex]),
+								tmpB(exp(pixelPointerAt->blue)-1, 0);
 		
 
 		 
