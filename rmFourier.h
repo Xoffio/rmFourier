@@ -43,6 +43,7 @@ typedef short int			int16;
 
 const std::string   strName = "rmFourier",
 					strDescription = "RM skeleton for ctrl plugind";
+const   std::complex<double> imaginaryI(0.0, 1.0);
 
 /* Versioning information */
 

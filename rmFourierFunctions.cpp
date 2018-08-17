@@ -241,12 +241,22 @@ pixelToVector(
 		A_long currentIndex = (iterationCount * siP->in_data.width) + xL;
 		PF_PixelFloat *pixelPointerAt = NULL;
 
-		if (siP->inverseCB) pixelPointerAt = (PF_PixelFloat*)((char*)siP->tmp_worldP->data + (currentIndex * sizeof(PF_PixelFloat))); //(PF_PixelFloat*)((char*)siP->output_worldP->data + (currentIndex * sizeof(PF_PixelFloat)));
-		else pixelPointerAt = (PF_PixelFloat*)((char*)siP->input_worldP->data + (currentIndex * sizeof(PF_PixelFloat)));
+		if (siP->inverseCB) {
+			pixelPointerAt = (PF_PixelFloat*)((char*)siP->tmp_worldP->data + (currentIndex * sizeof(PF_PixelFloat))); //(PF_PixelFloat*)((char*)siP->output_worldP->data + (currentIndex * sizeof(PF_PixelFloat)));
+			/*siP->imgVectorR[currentIndex] = pixelPointerAt->red;//exp(pixelPointerAt->red) - 1;
+			siP->imgVectorG[currentIndex] = exp(pixelPointerAt->green) - 1;
+			siP->imgVectorB[currentIndex] = exp(pixelPointerAt->blue) - 1;*/
+		}
+		else {
+			pixelPointerAt = (PF_PixelFloat*)((char*)siP->input_worldP->data + (currentIndex * sizeof(PF_PixelFloat)));
+			
+		}
 
 		siP->imgVectorR[currentIndex].real(pixelPointerAt->red);
 		siP->imgVectorG[currentIndex].real(pixelPointerAt->green);
 		siP->imgVectorB[currentIndex].real(pixelPointerAt->blue);
+
+		
 	}
 
 	return err;
@@ -295,24 +305,6 @@ vectorToPixel(
 		if (finalR > siP->gMax) siP->gMax = finalG;
 		if (finalR > siP->bMax) siP->bMax = finalB;
 	}
-	//else {
-		/*finalR = abs(siP->imgVectorR[currentIndex]);
-		finalG = abs(siP->imgVectorG[currentIndex]);
-		finalB = abs(siP->imgVectorB[currentIndex]);*/
-
-		/*finalR = atan2(siP->imgVectorR[currentIndex].imag(), siP->imgVectorR[currentIndex].real());
-		finalG = atan2(siP->imgVectorG[currentIndex].imag(), siP->imgVectorR[currentIndex].real());
-		finalB = atan2(siP->imgVectorB[currentIndex].imag(), siP->imgVectorR[currentIndex].real());
-
-		PF_PixelFloat *pixelPointerAt = (PF_PixelFloat*)((char*)siP->input_worldP->data + (currentIndex * sizeof(PF_PixelFloat)));
-		finalR = pixelPointerAt->red * exp(finalR);
-		finalG = 
-		finalB = 
-
-		if (finalR > siP->rMax) siP->rMax = finalR;
-		if (finalR > siP->gMax) siP->gMax = finalG;
-		if (finalR > siP->bMax) siP->bMax = finalB;
-	}*/
 
 	outP->alpha = 1;
 	outP->red = finalR;
@@ -346,16 +338,9 @@ fftRowsTh(
 		currentRowVecB.push_back(siP->imgVectorB[currentIndex]);
 	}
 
-	//if (!inv) {
 	fft::transform(currentRowVecR);
 	fft::transform(currentRowVecG);
 	fft::transform(currentRowVecB);
-	/*}
-	else {
-	fft::inverseTransform(currentRowVecR);
-	fft::inverseTransform(currentRowVecG);
-	fft::inverseTransform(currentRowVecB);
-	}*/
 
 	for (A_long i = 0; i < siP->imgWidth; i++) {
 		A_long currentIndex = (siP->imgWidth*iterationCount) + i;
@@ -379,8 +364,6 @@ fftColumnsTh(
 
 	AEGP_SuiteHandler suites(siP->in_data.pica_basicP);
 
-	//transformColumn(&siP->imgVectorR, &siP->imgVectorG, &siP->imgVectorB, iterationCount, siP->imgWidth, siP->imgHeight, siP->inverseCB);
-
 	std::vector<std::complex<double>> currentColVecR, currentColVecG, currentColVecB;
 
 	for (A_long i = 0; i < siP->imgWidth; i++) {
@@ -390,16 +373,9 @@ fftColumnsTh(
 		currentColVecB.push_back(siP->imgVectorB[currentIndex]);
 	}
 
-	//if (!inv) {
 	fft::transform(currentColVecR);
 	fft::transform(currentColVecG);
 	fft::transform(currentColVecB);
-	/*}
-	else {
-	fft::inverseTransform(currentColVecR);
-	fft::inverseTransform(currentColVecG);
-	fft::inverseTransform(currentColVecB);
-	}*/
 
 	for (A_long i = 0; i < siP->imgWidth; i++) {
 		A_long currentIndex = (siP->imgWidth*i) + iterationCount;
@@ -440,24 +416,27 @@ ifftRowsTh(
 	for (A_long i = 0; i < siP->imgWidth; i++) {
 		A_long currentIndex = (siP->imgWidth*iterationCount) + i;
 
-		PF_PixelFloat *pixelPointerAt = (PF_PixelFloat*)((char*)siP->input_worldP->data + (currentIndex * sizeof(PF_PixelFloat)));
-		const   std::complex<double> j(0.0, 1.0);
-		std::complex<double>	invR = exp(j * atan2(siP->imgVectorR[currentIndex].imag(), siP->imgVectorR[currentIndex].real())),
-								invG = exp(j * atan2(siP->imgVectorG[currentIndex].imag(), siP->imgVectorR[currentIndex].real())),
-								invB = exp(j * atan2(siP->imgVectorB[currentIndex].imag(), siP->imgVectorR[currentIndex].real())),
-								tmpR = j * abs(siP->imgVectorR[currentIndex]),
-								tmpG = j * abs(siP->imgVectorG[currentIndex]),
+		PF_PixelFloat *pixelPointerAt = (PF_PixelFloat*)((char*)siP->tmp_worldP->data + (currentIndex * sizeof(PF_PixelFloat)));
+		/*std::complex<double>	invR = exp(imaginaryI * double(pixelPointerAt->red)), //atan2(siP->imgVectorR[currentIndex].imag(), siP->imgVectorR[currentIndex].real())),
+								invG = exp(imaginaryI * double(pixelPointerAt->green)),//atan2(siP->imgVectorG[currentIndex].imag(), siP->imgVectorR[currentIndex].real())),
+								invB = exp(imaginaryI * double(pixelPointerAt->blue));*/  //atan2(siP->imgVectorB[currentIndex].imag(), siP->imgVectorR[currentIndex].real()));
+		std::complex<double>	invR = exp(imaginaryI * atan2(siP->imgVectorR[currentIndex].imag(), siP->imgVectorR[currentIndex].real())),
+								invG = exp(imaginaryI * atan2(siP->imgVectorG[currentIndex].imag(), siP->imgVectorR[currentIndex].real())),
+								invB = exp(imaginaryI * atan2(siP->imgVectorB[currentIndex].imag(), siP->imgVectorR[currentIndex].real())),
+								tmpR = imaginaryI * abs(siP->imgVectorR[currentIndex]),
+								tmpG = imaginaryI * abs(siP->imgVectorG[currentIndex]),
 								tmpB(exp(pixelPointerAt->blue)-1, 0);
-		
-
 		 
-		invR = tmpR * invR;
+		pixelPointerAt = (PF_PixelFloat*)((char*)siP->output_worldP->data + (currentIndex * sizeof(PF_PixelFloat)));
+		tmpB = exp(pixelPointerAt->blue) - 1;
+
+		invR = siP->imgVectorR[currentIndex] * invR;
 		invG = tmpG * invG;
 		invB = tmpB * invB;
 
 		currentRowVecR.push_back(siP->imgVectorR[currentIndex]);
-		currentRowVecG.push_back(siP->imgVectorG[currentIndex]);
-		currentRowVecB.push_back(siP->imgVectorB[currentIndex]);
+		currentRowVecG.push_back(invG);
+		currentRowVecB.push_back(invB);
 	}
 
 	fft::inverseTransform(currentRowVecR);
@@ -494,7 +473,6 @@ ifftColumnsTh(
 		currentColVecG.push_back(siP->imgVectorG[currentIndex]);
 		currentColVecB.push_back(siP->imgVectorB[currentIndex]);
 	}
-
 
 	fft::inverseTransform(currentColVecR);
 	fft::inverseTransform(currentColVecG);

@@ -243,7 +243,8 @@ SmartRender(
 						infoP->imgVectorG.resize(imgSize);
 						infoP->imgVectorB.resize(imgSize);
 
-						/*if (infoP->inverseCB) {
+						if (infoP->inverseCB) {
+							infoP->tmp_worldP = phase_worldP;
 							// Circular shift
 							ERR(suites.IterateFloatSuite1()->iterate( // TODO: to perfoemr faster give an area
 								in_data,
@@ -255,66 +256,58 @@ SmartRender(
 								circularShift,				// pixel function pointer
 								output_worldP
 							));
-
+							/*
 							// Make a vector from the image pixels.
 							ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
 								input_worldP->height,
 								(void*)infoP,
-								pixelToVector));*/
-							/*ERR(suites.IterateFloatSuite1()->iterate(
-								in_data,
-								0,							// progress base
-								output_worldP->height,		// progress final
-								output_worldP,				// src
-								NULL,						// area - null for all pixels
-								(void*)infoP,				// custom data pointer
-								pixelToVector,				// pixel function pointer
-								output_worldP
-							));*/
-						//}
-						
-						//if (!infoP->inverseCB) {
+								pixelToVector));
 
-						if (infoP->inverseCB && phase_worldP) infoP->tmp_worldP = phase_worldP;
-
-						// Make a vector from the image pixels.
-						ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
-							input_worldP->height,
-							(void*)infoP,
-							pixelToVector));
-						/*ERR(suites.IterateFloatSuite1()->iterate(
-							in_data,
-							0,							// progress base
-							output_worldP->height,		// progress final
-							input_worldP,				// src
-							NULL,						// area - null for all pixels
-							(void*)infoP,				// custom data pointer
-							pixelToVector,				// pixel function pointer
-							output_worldP
-						));*/
-
-						ERR(suites.IterateSuite1()->AEGP_GetNumThreads(&infoP->nMaxThreads));
-
-						// FFT the Rows
-						ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
-							input_worldP->height,
-							(void*)infoP,
-							fftRowsTh));
-
-						// FFT the columns
-						ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
-							input_worldP->height,
-							(void*)infoP,
-							fftColumnsTh));
-
-						if (infoP->inverseCB) {
-							// FFT the Rows
+							// IFFT the Rows
 							ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
 								input_worldP->height,
 								(void*)infoP,
 								ifftRowsTh));
 
+							// IFFT the columns
+							ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
+								input_worldP->height,
+								(void*)infoP,
+								ifftColumnsTh));*/
+						}
+						
+						//if (!infoP->inverseCB) {
+							//if (infoP->inverseCB && phase_worldP) infoP->tmp_worldP = phase_worldP;
+						infoP->tmp_worldP = phase_worldP;
+							// Make a vector from the image pixels.
+							ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
+								input_worldP->height,
+								(void*)infoP,
+								pixelToVector));
+
+							ERR(suites.IterateSuite1()->AEGP_GetNumThreads(&infoP->nMaxThreads));
+
+							// FFT the Rows
+							ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
+								input_worldP->height,
+								(void*)infoP,
+								fftRowsTh));
+
 							// FFT the columns
+							ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
+								input_worldP->height,
+								(void*)infoP,
+								fftColumnsTh));
+						//}
+
+						if (infoP->inverseCB) {
+							// IFFT the Rows
+							ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
+								input_worldP->height,
+								(void*)infoP,
+								ifftRowsTh));
+
+							// IFFT the columns
 							ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
 								input_worldP->height,
 								(void*)infoP,
@@ -332,64 +325,11 @@ SmartRender(
 							vectorToPixel,				// pixel function pointer
 							output_worldP
 						));
-						//}
-						/*else {
-							if (phase_worldP) {
-
-								for (int row = 0; row < input_worldP->height; row++) {
-									for (int col = 0; col < input_worldP->width; col++) {
-										A_long dstPointAt = (row*input_worldP->width) + col;
-										PF_PixelFloat *pixelPointerAt = (PF_PixelFloat*)((char*)phase_worldP->data + (dstPointAt * sizeof(PF_PixelFloat)));
-										std::complex<double> tmpV(0, pixelPointerAt->red);
-
-										//infoP->phaseVectorR.push_back( exp(tmpV) );
-										infoP->imgVectorR[dstPointAt] = infoP->imgVectorR[dstPointAt] * exp(tmpV);
-									}
-								}
-
-								// FFT the Rows
-								ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
-									input_worldP->height,
-									(void*)infoP,
-									fftRowsTh));
-
-								// FFT the columns
-								ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
-									input_worldP->height,
-									(void*)infoP,
-									fftColumnsTh));
-
-								// Put the values in the vector back to the image, also get the max in order to normalize later
-								ERR(suites.IterateFloatSuite1()->iterate(
-									in_data,
-									0,							// progress base
-									output_worldP->height,		// progress final
-									input_worldP,				// src
-									NULL,						// area - null for all pixels
-									(void*)infoP,				// custom data pointer
-									vectorToPixel,				// pixel function pointer
-									output_worldP
-								));
-
-								// Normalize the image
-								ERR(suites.IterateFloatSuite1()->iterate(
-									in_data,
-									0,							// progress base
-									output_worldP->height,		// progress final
-									output_worldP,				// src
-									NULL,						// area - null for all pixels
-									(void*)infoP,				// custom data pointer
-									normalizeImg,				// pixel function pointer
-									output_worldP
-								));
-								
-							}
-						}*/
 
 						// If I want to get the magnitude only
 						if (!infoP->inverseCB && !infoP->fftPhase) {
 							// Normalize the image
-							ERR(suites.IterateFloatSuite1()->iterate(
+							/*ERR(suites.IterateFloatSuite1()->iterate(
 								in_data,
 								0,							// progress base
 								output_worldP->height,		// progress final
@@ -398,7 +338,7 @@ SmartRender(
 								(void*)infoP,				// custom data pointer
 								normalizeImg,				// pixel function pointer
 								output_worldP
-							));
+							));*/
 
 							// Circular shift
 							ERR(suites.IterateFloatSuite1()->iterate(// TODO: to perfoemr faster give an area
@@ -415,7 +355,7 @@ SmartRender(
 						
 						if (infoP->inverseCB) {
 							// Normalize the image
-							ERR(suites.IterateFloatSuite1()->iterate(
+							/*ERR(suites.IterateFloatSuite1()->iterate(
 								in_data,
 								0,							// progress base
 								output_worldP->height,		// progress final
@@ -424,7 +364,7 @@ SmartRender(
 								(void*)infoP,				// custom data pointer
 								normalizeImg,				// pixel function pointer
 								output_worldP
-							));
+							));*/
 						}
 						break;
 					}
