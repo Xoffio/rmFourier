@@ -82,12 +82,11 @@ typedef struct {
 	bool								inverseCB,
 										fftPhase;
 	
-	std::vector<std::complex<double>>	tmpVectorR,
-										imgVectorR, imgVectorG, imgVectorB,
+	std::vector<std::complex<double>>	imgVectorR, imgVectorG, imgVectorB,
 										phaseVectorR, phaseVectorG, phaseVectorB;
-	unsigned int						fftState; // 0= Columns, 1= Rows 
 	double								rMax, gMax, bMax;
-	A_long								imgWidth, imgHeight;
+	A_long								inWidth, inHeight,
+										outWidth, outHeight;
 	A_long								nMaxThreads;
 	int tmpCount, tmpMax;
 } rmFourierInfo;
@@ -104,6 +103,8 @@ extern "C" {
 		PF_LayerDef		*output,
 		void			*extra) ;
 }
+
+bool checkWorldSizes(PF_EffectWorld *in, PF_EffectWorld *out);
 
 static PF_PixelFloat
 *getXY32(PF_EffectWorld &def, int x, int y);

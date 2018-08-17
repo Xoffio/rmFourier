@@ -1,5 +1,12 @@
 #include "rmFourier.h"
 
+bool checkWorldSizes(PF_EffectWorld *in, PF_EffectWorld *out) {
+	bool same = false;
+
+	if ((in->width == out->width) && (in->height == out->height)) same = true;
+
+	return (same);
+}
 
 static PF_PixelFloat
 *getXY32(PF_EffectWorld &def, int x, int y) {
@@ -37,6 +44,8 @@ circularShift(
 	PF_PixelFloat 	*inP,
 	PF_PixelFloat 	*outP)
 {
+	// TODO: 
+	// ODD numbeers.
 	register rmFourierInfo	*siP = (rmFourierInfo*)refcon;
 	PF_Err				err = PF_Err_NONE;
 
@@ -44,8 +53,8 @@ circularShift(
 
 	A_long xL2 = xL; 
 	A_long yL2 = yL;
-	A_long wHalf = siP->imgWidth / 2;
-	A_long hHalf = siP->imgHeight / 2;
+	A_long wHalf = siP->inWidth / 2;
+	A_long hHalf = siP->inHeight / 2;
 
 	if (yL < hHalf) yL2 = yL + hHalf;
 	else yL2 = yL - hHalf;
@@ -53,7 +62,7 @@ circularShift(
 	if (xL < wHalf) {
 		xL2 = xL + wHalf;
 
-		unsigned long dstPointAt = (yL2 * siP->imgWidth) + xL2;
+		unsigned long dstPointAt = (yL2 * siP->inWidth) + xL2;
 
 		PF_PixelFloat *pixelPointerAt = (PF_PixelFloat*)((char*)siP->output_worldP->data + (dstPointAt * sizeof(PF_PixelFloat)));
 		PF_PixelFloat tmpPixel = *inP;
@@ -81,8 +90,8 @@ pixelToVector(
 
 	AEGP_SuiteHandler suites(siP->in_data.pica_basicP);
 
-	for (A_long xL = 0; xL < siP->imgWidth; xL++) {
-		A_long currentIndex = (iterationCount * siP->in_data.width) + xL;
+	for (A_long xL = 0; xL < siP->inWidth; xL++) {
+		A_long currentIndex = (iterationCount * siP->inWidth) + xL;
 		PF_PixelFloat *pixelPointerAt = NULL;
 
 		pixelPointerAt = (PF_PixelFloat*)((char*)siP->input_worldP->data + (currentIndex * sizeof(PF_PixelFloat)));
@@ -107,7 +116,7 @@ vectorToPixel(
 
 	AEGP_SuiteHandler suites(siP->in_data.pica_basicP);
 
-	A_long currentIndex = (yL * siP->in_data.width) + xL;
+	A_long currentIndex = (yL * siP->inWidth) + xL;
 
 	PF_FpShort finalR, finalG, finalB;
 
@@ -163,8 +172,8 @@ fftRowsTh(
 
 	std::vector<std::complex<double>> currentRowVecR, currentRowVecG, currentRowVecB;
 
-	for (A_long i = 0; i < siP->imgWidth; i++) {
-		A_long currentIndex = (siP->imgWidth*iterationCount) + i;
+	for (A_long i = 0; i < siP->inWidth; i++) {
+		A_long currentIndex = (siP->inWidth*iterationCount) + i;
 		currentRowVecR.push_back(siP->imgVectorR[currentIndex]);
 		currentRowVecG.push_back(siP->imgVectorG[currentIndex]);
 		currentRowVecB.push_back(siP->imgVectorB[currentIndex]);
@@ -174,8 +183,8 @@ fftRowsTh(
 	fft::transform(currentRowVecG);
 	fft::transform(currentRowVecB);
 
-	for (A_long i = 0; i < siP->imgWidth; i++) {
-		A_long currentIndex = (siP->imgWidth*iterationCount) + i;
+	for (A_long i = 0; i < siP->inWidth; i++) {
+		A_long currentIndex = (siP->inWidth*iterationCount) + i;
 		siP->imgVectorR.operator[](currentIndex) = currentRowVecR[i];
 		siP->imgVectorG.operator[](currentIndex) = currentRowVecG[i];
 		siP->imgVectorB.operator[](currentIndex) = currentRowVecB[i];
@@ -198,8 +207,8 @@ fftColumnsTh(
 
 	std::vector<std::complex<double>> currentColVecR, currentColVecG, currentColVecB;
 
-	for (A_long i = 0; i < siP->imgWidth; i++) {
-		A_long currentIndex = (siP->imgWidth*i) + iterationCount;
+	for (A_long i = 0; i < siP->inWidth; i++) {
+		A_long currentIndex = (siP->inWidth*i) + iterationCount;
 		currentColVecR.push_back(siP->imgVectorR[currentIndex]);
 		currentColVecG.push_back(siP->imgVectorG[currentIndex]);
 		currentColVecB.push_back(siP->imgVectorB[currentIndex]);
@@ -209,8 +218,8 @@ fftColumnsTh(
 	fft::transform(currentColVecG);
 	fft::transform(currentColVecB);
 
-	for (A_long i = 0; i < siP->imgWidth; i++) {
-		A_long currentIndex = (siP->imgWidth*i) + iterationCount;
+	for (A_long i = 0; i < siP->inWidth; i++) {
+		A_long currentIndex = (siP->inWidth*i) + iterationCount;
 		siP->imgVectorR.operator[](currentIndex) = currentColVecR[i];
 		siP->imgVectorG.operator[](currentIndex) = currentColVecG[i];
 		siP->imgVectorB.operator[](currentIndex) = currentColVecB[i];
@@ -236,8 +245,8 @@ ifftRowsTh(
 
 	std::vector<std::complex<double>> currentRowVecR, currentRowVecG, currentRowVecB;
 
-	for (A_long i = 0; i < siP->imgWidth; i++) {
-		A_long currentIndex = (siP->imgWidth*iterationCount) + i;
+	for (A_long i = 0; i < siP->inWidth; i++) {
+		A_long currentIndex = (siP->inWidth*iterationCount) + i;
 
 		PF_PixelFloat *pixelPointerAt = (PF_PixelFloat*)((char*)siP->tmp_worldP->data + (currentIndex * sizeof(PF_PixelFloat)));
 		std::complex<double>	invR = exp(imaginaryI * double(pixelPointerAt->red)),   
@@ -260,8 +269,8 @@ ifftRowsTh(
 	fft::inverseTransform(currentRowVecG);
 	fft::inverseTransform(currentRowVecB);
 
-	for (A_long i = 0; i < siP->imgWidth; i++) {
-		A_long currentIndex = (siP->imgWidth*iterationCount) + i;
+	for (A_long i = 0; i < siP->inWidth; i++) {
+		A_long currentIndex = (siP->inWidth*iterationCount) + i;
 		siP->imgVectorR.operator[](currentIndex) = currentRowVecR[i];
 		siP->imgVectorG.operator[](currentIndex) = currentRowVecG[i];
 		siP->imgVectorB.operator[](currentIndex) = currentRowVecB[i];
@@ -284,8 +293,8 @@ ifftColumnsTh(
 
 	std::vector<std::complex<double>> currentColVecR, currentColVecG, currentColVecB;
 
-	for (A_long i = 0; i < siP->imgWidth; i++) {
-		A_long currentIndex = (siP->imgWidth*i) + iterationCount;
+	for (A_long i = 0; i < siP->inWidth; i++) {
+		A_long currentIndex = (siP->inWidth*i) + iterationCount;
 		currentColVecR.push_back(siP->imgVectorR[currentIndex]);
 		currentColVecG.push_back(siP->imgVectorG[currentIndex]);
 		currentColVecB.push_back(siP->imgVectorB[currentIndex]);
@@ -295,8 +304,8 @@ ifftColumnsTh(
 	fft::inverseTransform(currentColVecG);
 	fft::inverseTransform(currentColVecB);
 
-	for (A_long i = 0; i < siP->imgWidth; i++) {
-		A_long currentIndex = (siP->imgWidth*i) + iterationCount;
+	for (A_long i = 0; i < siP->inWidth; i++) {
+		A_long currentIndex = (siP->inWidth*i) + iterationCount;
 		siP->imgVectorR.operator[](currentIndex) = currentColVecR[i];
 		siP->imgVectorG.operator[](currentIndex) = currentColVecG[i];
 		siP->imgVectorB.operator[](currentIndex) = currentColVecB[i];
