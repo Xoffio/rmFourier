@@ -108,8 +108,6 @@ extern "C" {
 static PF_PixelFloat
 *getXY32(PF_EffectWorld &def, int x, int y);
 
-PF_EffectWorld tmpFourier(PF_EffectWorld inWorld);
-
 PF_Err
 normalizeImg(
 	void			*refcon,
