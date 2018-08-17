@@ -256,12 +256,12 @@ SmartRender(
 								circularShift,				// pixel function pointer
 								output_worldP
 							));
-							/*
+							
 							// Make a vector from the image pixels.
-							ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
+							/*ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
 								input_worldP->height,
 								(void*)infoP,
-								pixelToVector));
+								pixelToVector));*/
 
 							// IFFT the Rows
 							ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
@@ -273,12 +273,12 @@ SmartRender(
 							ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
 								input_worldP->height,
 								(void*)infoP,
-								ifftColumnsTh));*/
+								ifftColumnsTh));
 						}
 						
-						//if (!infoP->inverseCB) {
+						if (!infoP->inverseCB) {
 							//if (infoP->inverseCB && phase_worldP) infoP->tmp_worldP = phase_worldP;
-						infoP->tmp_worldP = phase_worldP;
+
 							// Make a vector from the image pixels.
 							ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
 								input_worldP->height,
@@ -298,20 +298,6 @@ SmartRender(
 								input_worldP->height,
 								(void*)infoP,
 								fftColumnsTh));
-						//}
-
-						if (infoP->inverseCB) {
-							// IFFT the Rows
-							ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
-								input_worldP->height,
-								(void*)infoP,
-								ifftRowsTh));
-
-							// IFFT the columns
-							ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
-								input_worldP->height,
-								(void*)infoP,
-								ifftColumnsTh));
 						}
 
 						// Put the values in the vector back to the image, also get the max in order to normalize later

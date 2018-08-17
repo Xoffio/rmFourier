@@ -241,22 +241,19 @@ pixelToVector(
 		A_long currentIndex = (iterationCount * siP->in_data.width) + xL;
 		PF_PixelFloat *pixelPointerAt = NULL;
 
-		if (siP->inverseCB) {
-			pixelPointerAt = (PF_PixelFloat*)((char*)siP->tmp_worldP->data + (currentIndex * sizeof(PF_PixelFloat))); //(PF_PixelFloat*)((char*)siP->output_worldP->data + (currentIndex * sizeof(PF_PixelFloat)));
-			/*siP->imgVectorR[currentIndex] = pixelPointerAt->red;//exp(pixelPointerAt->red) - 1;
+		/*if (siP->inverseCB) {
+			pixelPointerAt = (PF_PixelFloat*)((char*)siP->output_worldP->data + (currentIndex * sizeof(PF_PixelFloat))); //(PF_PixelFloat*)((char*)siP->output_worldP->data + (currentIndex * sizeof(PF_PixelFloat)));
+			siP->imgVectorR[currentIndex] = exp(pixelPointerAt->red) - 1;
 			siP->imgVectorG[currentIndex] = exp(pixelPointerAt->green) - 1;
-			siP->imgVectorB[currentIndex] = exp(pixelPointerAt->blue) - 1;*/
+			siP->imgVectorB[currentIndex] = exp(pixelPointerAt->blue) - 1;
 		}
-		else {
+		else {*/
 			pixelPointerAt = (PF_PixelFloat*)((char*)siP->input_worldP->data + (currentIndex * sizeof(PF_PixelFloat)));
-			
-		}
+			siP->imgVectorR[currentIndex].real(pixelPointerAt->red);
+			siP->imgVectorG[currentIndex].real(pixelPointerAt->green);
+			siP->imgVectorB[currentIndex].real(pixelPointerAt->blue);
+		//}
 
-		siP->imgVectorR[currentIndex].real(pixelPointerAt->red);
-		siP->imgVectorG[currentIndex].real(pixelPointerAt->green);
-		siP->imgVectorB[currentIndex].real(pixelPointerAt->blue);
-
-		
 	}
 
 	return err;
@@ -417,24 +414,18 @@ ifftRowsTh(
 		A_long currentIndex = (siP->imgWidth*iterationCount) + i;
 
 		PF_PixelFloat *pixelPointerAt = (PF_PixelFloat*)((char*)siP->tmp_worldP->data + (currentIndex * sizeof(PF_PixelFloat)));
-		/*std::complex<double>	invR = exp(imaginaryI * double(pixelPointerAt->red)), //atan2(siP->imgVectorR[currentIndex].imag(), siP->imgVectorR[currentIndex].real())),
-								invG = exp(imaginaryI * double(pixelPointerAt->green)),//atan2(siP->imgVectorG[currentIndex].imag(), siP->imgVectorR[currentIndex].real())),
-								invB = exp(imaginaryI * double(pixelPointerAt->blue));*/  //atan2(siP->imgVectorB[currentIndex].imag(), siP->imgVectorR[currentIndex].real()));
-		std::complex<double>	invR = exp(imaginaryI * atan2(siP->imgVectorR[currentIndex].imag(), siP->imgVectorR[currentIndex].real())),
-								invG = exp(imaginaryI * atan2(siP->imgVectorG[currentIndex].imag(), siP->imgVectorR[currentIndex].real())),
-								invB = exp(imaginaryI * atan2(siP->imgVectorB[currentIndex].imag(), siP->imgVectorR[currentIndex].real())),
-								tmpR = imaginaryI * abs(siP->imgVectorR[currentIndex]),
-								tmpG = imaginaryI * abs(siP->imgVectorG[currentIndex]),
-								tmpB(exp(pixelPointerAt->blue)-1, 0);
-		 
-		pixelPointerAt = (PF_PixelFloat*)((char*)siP->output_worldP->data + (currentIndex * sizeof(PF_PixelFloat)));
-		tmpB = exp(pixelPointerAt->blue) - 1;
+		std::complex<double>	invR = exp(imaginaryI * double(pixelPointerAt->red)),   //atan2(siP->imgVectorR[currentIndex].imag(), siP->imgVectorR[currentIndex].real())),
+								invG = exp(imaginaryI * double(pixelPointerAt->green)), //atan2(siP->imgVectorG[currentIndex].imag(), siP->imgVectorR[currentIndex].real())),
+								invB = exp(imaginaryI * double(pixelPointerAt->blue));  //atan2(siP->imgVectorB[currentIndex].imag(), siP->imgVectorR[currentIndex].real()));
 
-		invR = siP->imgVectorR[currentIndex] * invR;
-		invG = tmpG * invG;
+		pixelPointerAt = (PF_PixelFloat*)((char*)siP->output_worldP->data + (currentIndex * sizeof(PF_PixelFloat)));
+		std::complex<double>	tmpB = exp(pixelPointerAt->blue) - 1;
+
+		invR = std::complex<double>(exp(pixelPointerAt->red) - 1) * invR;
+		invG = std::complex<double>(exp(pixelPointerAt->green) - 1) * invG;
 		invB = tmpB * invB;
 
-		currentRowVecR.push_back(siP->imgVectorR[currentIndex]);
+		currentRowVecR.push_back(invR);
 		currentRowVecG.push_back(invG);
 		currentRowVecB.push_back(invB);
 	}
