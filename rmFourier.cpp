@@ -256,12 +256,6 @@ SmartRender(
 								circularShift,				// pixel function pointer
 								output_worldP
 							));
-							
-							// Make a vector from the image pixels.
-							/*ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
-								input_worldP->height,
-								(void*)infoP,
-								pixelToVector));*/
 
 							// IFFT the Rows
 							ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
@@ -275,10 +269,7 @@ SmartRender(
 								(void*)infoP,
 								ifftColumnsTh));
 						}
-						
-						if (!infoP->inverseCB) {
-							//if (infoP->inverseCB && phase_worldP) infoP->tmp_worldP = phase_worldP;
-
+						else{
 							// Make a vector from the image pixels.
 							ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
 								input_worldP->height,
@@ -341,7 +332,7 @@ SmartRender(
 						
 						if (infoP->inverseCB) {
 							// Normalize the image
-							/*ERR(suites.IterateFloatSuite1()->iterate(
+							ERR(suites.IterateFloatSuite1()->iterate(
 								in_data,
 								0,							// progress base
 								output_worldP->height,		// progress final
@@ -350,7 +341,7 @@ SmartRender(
 								(void*)infoP,				// custom data pointer
 								normalizeImg,				// pixel function pointer
 								output_worldP
-							));*/
+							));
 						}
 						break;
 					}

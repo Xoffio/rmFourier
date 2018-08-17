@@ -26,7 +26,6 @@ normalizeImg(
 	outP->green = inP->green / siP->rMax;
 	outP->blue = inP->blue / siP->rMax;
 
-
 	return err;
 }
 
