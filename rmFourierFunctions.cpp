@@ -132,8 +132,8 @@ vectorToPixel(
 		}
 		else {
 			finalR = atan2(siP->imgVectorR[currentIndex].imag(), siP->imgVectorR[currentIndex].real());
-			finalG = atan2(siP->imgVectorG[currentIndex].imag(), siP->imgVectorR[currentIndex].real());
-			finalB = atan2(siP->imgVectorB[currentIndex].imag(), siP->imgVectorR[currentIndex].real());
+			finalG = atan2(siP->imgVectorG[currentIndex].imag(), siP->imgVectorG[currentIndex].real());
+			finalB = atan2(siP->imgVectorB[currentIndex].imag(), siP->imgVectorB[currentIndex].real());
 		}
 		
 	}

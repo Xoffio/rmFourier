@@ -236,8 +236,8 @@ SmartRender(
 					case PF_PixelFormat_ARGB128: {
 						if (input_worldP->data && output_worldP->data) {
 							A_long imgSize = input_worldP->width * input_worldP->height;
-							infoP->inWidth = input_worldP->width;
-							infoP->inHeight = input_worldP->height;
+							infoP->inWidth = input_worldP->width; //in_data->width;
+							infoP->inHeight = input_worldP->height;//in_data->height;
 
 							// Initialize the vectors
 							infoP->imgVectorR.resize(imgSize);
@@ -266,7 +266,7 @@ SmartRender(
 
 								// IFFT the columns
 								ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
-									input_worldP->height,
+									input_worldP->width,
 									(void*)infoP,
 									ifftColumnsTh));
 							}
@@ -287,7 +287,7 @@ SmartRender(
 
 								// FFT the columns
 								ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
-									input_worldP->height,
+									input_worldP->width,
 									(void*)infoP,
 									fftColumnsTh));
 							}
