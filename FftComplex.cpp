@@ -32,15 +32,14 @@ using std::complex;
 using std::size_t;
 using std::vector;
 
-
 // Private function prototypes
 static size_t reverseBits(size_t x, int n);
-
 
 void fft::transform(vector<complex<double> > &vec) {
 	size_t n = vec.size();
 	if (n == 0)
 		return;
+
 	else if ((n & (n - 1)) == 0)  // Is power of 2
 		transformRadix2(vec);
 	else  // More complicated algorithm for arbitrary sizes

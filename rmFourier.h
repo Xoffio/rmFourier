@@ -168,4 +168,20 @@ ifftColumnsTh(
 	A_long iterationCount,
 	A_long numOfIterations);
 
+PF_Err
+tmpRender16(
+	void			*refcon,
+	A_long 			xL,
+	A_long 			yL,
+	PF_Pixel16 	*inP,
+	PF_Pixel16 	*outP);
+
+PF_Err
+tmpRender8(
+	void			*refcon,
+	A_long 			xL,
+	A_long 			yL,
+	PF_Pixel8 	*inP,
+	PF_Pixel8 	*outP);
+
 #endif // RMFOURIER_H

@@ -207,8 +207,8 @@ fftColumnsTh(
 
 	std::vector<std::complex<double>> currentColVecR, currentColVecG, currentColVecB;
 
-	for (A_long i = 0; i < siP->inWidth; i++) {
-		A_long currentIndex = (siP->inWidth*i) + iterationCount;
+	for (A_long i = 0; i < siP->inHeight; i++) {
+		A_long currentIndex = (siP->inHeight*i) + iterationCount;
 		currentColVecR.push_back(siP->imgVectorR[currentIndex]);
 		currentColVecG.push_back(siP->imgVectorG[currentIndex]);
 		currentColVecB.push_back(siP->imgVectorB[currentIndex]);
@@ -218,8 +218,8 @@ fftColumnsTh(
 	fft::transform(currentColVecG);
 	fft::transform(currentColVecB);
 
-	for (A_long i = 0; i < siP->inWidth; i++) {
-		A_long currentIndex = (siP->inWidth*i) + iterationCount;
+	for (A_long i = 0; i < siP->inHeight; i++) {
+		A_long currentIndex = (siP->inHeight*i) + iterationCount;
 		siP->imgVectorR.operator[](currentIndex) = currentColVecR[i];
 		siP->imgVectorG.operator[](currentIndex) = currentColVecG[i];
 		siP->imgVectorB.operator[](currentIndex) = currentColVecB[i];
@@ -293,8 +293,8 @@ ifftColumnsTh(
 
 	std::vector<std::complex<double>> currentColVecR, currentColVecG, currentColVecB;
 
-	for (A_long i = 0; i < siP->inWidth; i++) {
-		A_long currentIndex = (siP->inWidth*i) + iterationCount;
+	for (A_long i = 0; i < siP->inHeight; i++) {
+		A_long currentIndex = (siP->inHeight*i) + iterationCount;
 		currentColVecR.push_back(siP->imgVectorR[currentIndex]);
 		currentColVecG.push_back(siP->imgVectorG[currentIndex]);
 		currentColVecB.push_back(siP->imgVectorB[currentIndex]);
@@ -304,12 +304,48 @@ ifftColumnsTh(
 	fft::inverseTransform(currentColVecG);
 	fft::inverseTransform(currentColVecB);
 
-	for (A_long i = 0; i < siP->inWidth; i++) {
-		A_long currentIndex = (siP->inWidth*i) + iterationCount;
+	for (A_long i = 0; i < siP->inHeight; i++) {
+		A_long currentIndex = (siP->inHeight*i) + iterationCount;
 		siP->imgVectorR.operator[](currentIndex) = currentColVecR[i];
 		siP->imgVectorG.operator[](currentIndex) = currentColVecG[i];
 		siP->imgVectorB.operator[](currentIndex) = currentColVecB[i];
 	}
+
+	return err;
+}
+
+PF_Err
+tmpRender16(
+	void			*refcon,
+	A_long 			xL,
+	A_long 			yL,
+	PF_Pixel16 	*inP,
+	PF_Pixel16 	*outP)
+{
+	register rmFourierInfo	*siP = (rmFourierInfo*)refcon;
+	PF_Err				err = PF_Err_NONE;
+
+	AEGP_SuiteHandler suites(siP->in_data.pica_basicP);
+
+	*outP = *inP;
+
+	return err;
+}
+
+PF_Err
+tmpRender8(
+	void			*refcon,
+	A_long 			xL,
+	A_long 			yL,
+	PF_Pixel8 	*inP,
+	PF_Pixel8 	*outP)
+{
+	register rmFourierInfo	*siP = (rmFourierInfo*)refcon;
+	PF_Err				err = PF_Err_NONE;
+
+	AEGP_SuiteHandler suites(siP->in_data.pica_basicP);
+
+	*outP = *inP;
 
 	return err;
 }

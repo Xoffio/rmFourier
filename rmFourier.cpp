@@ -350,11 +350,45 @@ SmartRender(
 					}
 						
 
-					case PF_PixelFormat_ARGB64:
-						break;
+					case PF_PixelFormat_ARGB64: {
+						infoP->inWidth = input_worldP->width; //in_data->width;
+						infoP->inHeight = input_worldP->height;//in_data->height;
 
-					case PF_PixelFormat_ARGB32:
+															   // Circular shift
+						ERR(suites.Iterate16Suite1()->iterate(// TODO: to perfoemr faster give an area
+							in_data,
+							0,							// progress base
+							output_worldP->height,		// progress final
+							output_worldP,				// src
+							NULL,						// area - null for all pixels
+							(void*)infoP,				// custom data pointer
+							tmpRender16,				// pixel function pointer
+							output_worldP
+						));
+
 						break;
+					}
+						
+
+					case PF_PixelFormat_ARGB32: {
+						infoP->inWidth = input_worldP->width; //in_data->width;
+						infoP->inHeight = input_worldP->height;//in_data->height;
+
+															   // Circular shift
+						ERR(suites.Iterate8Suite1()->iterate(// TODO: to perfoemr faster give an area
+							in_data,
+							0,							// progress base
+							output_worldP->height,		// progress final
+							output_worldP,				// src
+							NULL,						// area - null for all pixels
+							(void*)infoP,				// custom data pointer
+							tmpRender8,				// pixel function pointer
+							output_worldP
+						));
+
+						break;
+					}
+						
 
 					default:
 						err = PF_Err_BAD_CALLBACK_PARAM;
