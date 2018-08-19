@@ -208,7 +208,7 @@ fftColumnsTh(
 	std::vector<std::complex<double>> currentColVecR, currentColVecG, currentColVecB;
 
 	for (A_long i = 0; i < siP->inHeight; i++) {
-		A_long currentIndex = (siP->inHeight*i) + iterationCount;
+		A_long currentIndex = (siP->inWidth*i) + iterationCount;
 		currentColVecR.push_back(siP->imgVectorR[currentIndex]);
 		currentColVecG.push_back(siP->imgVectorG[currentIndex]);
 		currentColVecB.push_back(siP->imgVectorB[currentIndex]);
@@ -219,7 +219,7 @@ fftColumnsTh(
 	fft::transform(currentColVecB);
 
 	for (A_long i = 0; i < siP->inHeight; i++) {
-		A_long currentIndex = (siP->inHeight*i) + iterationCount;
+		A_long currentIndex = (siP->inWidth*i) + iterationCount;
 		siP->imgVectorR.operator[](currentIndex) = currentColVecR[i];
 		siP->imgVectorG.operator[](currentIndex) = currentColVecG[i];
 		siP->imgVectorB.operator[](currentIndex) = currentColVecB[i];
@@ -294,7 +294,7 @@ ifftColumnsTh(
 	std::vector<std::complex<double>> currentColVecR, currentColVecG, currentColVecB;
 
 	for (A_long i = 0; i < siP->inHeight; i++) {
-		A_long currentIndex = (siP->inHeight*i) + iterationCount;
+		A_long currentIndex = (siP->inWidth*i) + iterationCount;
 		currentColVecR.push_back(siP->imgVectorR[currentIndex]);
 		currentColVecG.push_back(siP->imgVectorG[currentIndex]);
 		currentColVecB.push_back(siP->imgVectorB[currentIndex]);
@@ -305,7 +305,7 @@ ifftColumnsTh(
 	fft::inverseTransform(currentColVecB);
 
 	for (A_long i = 0; i < siP->inHeight; i++) {
-		A_long currentIndex = (siP->inHeight*i) + iterationCount;
+		A_long currentIndex = (siP->inWidth*i) + iterationCount;
 		siP->imgVectorR.operator[](currentIndex) = currentColVecR[i];
 		siP->imgVectorG.operator[](currentIndex) = currentColVecG[i];
 		siP->imgVectorB.operator[](currentIndex) = currentColVecB[i];

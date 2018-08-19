@@ -235,9 +235,12 @@ SmartRender(
 
 					case PF_PixelFormat_ARGB128: {
 						if (input_worldP->data && output_worldP->data) {
-							A_long imgSize = input_worldP->width * input_worldP->height;
-							infoP->inWidth = input_worldP->width; //in_data->width;
-							infoP->inHeight = input_worldP->height;//in_data->height;
+							infoP->inWidth	= input_worldP->width; //in_data->width;
+							infoP->inHeight	= input_worldP->height;//in_data->height;
+							infoP->outWidth = out_data->width;
+							infoP->outHeight = out_data->height;
+
+							A_long imgSize = infoP->inWidth * infoP->inHeight;
 
 							// Initialize the vectors
 							infoP->imgVectorR.resize(imgSize);
@@ -250,7 +253,7 @@ SmartRender(
 								ERR(suites.IterateFloatSuite1()->iterate( // TODO: to perfoemr faster give an area
 									in_data,
 									0,							// progress base
-									output_worldP->height,		// progress final
+									infoP->inHeight,		// progress final
 									input_worldP,				// src
 									NULL,						// area - null for all pixels
 									(void*)infoP,				// custom data pointer
@@ -260,20 +263,20 @@ SmartRender(
 
 								// IFFT the Rows
 								ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
-									input_worldP->height,
+									infoP->inHeight,//input_worldP->height,
 									(void*)infoP,
 									ifftRowsTh));
 
 								// IFFT the columns
 								ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
-									input_worldP->width,
+									infoP->inWidth, //input_worldP->width,
 									(void*)infoP,
 									ifftColumnsTh));
 							}
 							else {
 								// Make a vector from the image pixels.
 								ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
-									input_worldP->height,
+									infoP->inHeight,//input_worldP->height,
 									(void*)infoP,
 									pixelToVector));
 
@@ -281,13 +284,13 @@ SmartRender(
 
 								// FFT the Rows
 								ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
-									input_worldP->height,
+									infoP->inHeight,//input_worldP->height,
 									(void*)infoP,
 									fftRowsTh));
 
 								// FFT the columns
 								ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
-									input_worldP->width,
+									infoP->inWidth, //input_worldP->width,
 									(void*)infoP,
 									fftColumnsTh));
 							}
@@ -296,7 +299,7 @@ SmartRender(
 							ERR(suites.IterateFloatSuite1()->iterate(
 								in_data,
 								0,							// progress base
-								output_worldP->height,		// progress final
+								infoP->inHeight,			// progress final
 								input_worldP,				// src
 								NULL,						// area - null for all pixels
 								(void*)infoP,				// custom data pointer
@@ -322,7 +325,7 @@ SmartRender(
 								ERR(suites.IterateFloatSuite1()->iterate(// TODO: to perfoemr faster give an area
 									in_data,
 									0,							// progress base
-									output_worldP->height,		// progress final
+									infoP->inHeight,			// progress final
 									output_worldP,				// src
 									NULL,						// area - null for all pixels
 									(void*)infoP,				// custom data pointer
@@ -336,7 +339,7 @@ SmartRender(
 								ERR(suites.IterateFloatSuite1()->iterate(
 									in_data,
 									0,							// progress base
-									output_worldP->height,		// progress final
+									infoP->inHeight,			// progress final
 									output_worldP,				// src
 									NULL,						// area - null for all pixels
 									(void*)infoP,				// custom data pointer
@@ -373,13 +376,12 @@ SmartRender(
 					case PF_PixelFormat_ARGB32: {
 						infoP->inWidth = input_worldP->width; //in_data->width;
 						infoP->inHeight = input_worldP->height;//in_data->height;
-
-															   // Circular shift
-						ERR(suites.Iterate8Suite1()->iterate(// TODO: to perfoemr faster give an area
+								
+						ERR(suites.Iterate8Suite1()->iterate(
 							in_data,
 							0,							// progress base
 							output_worldP->height,		// progress final
-							output_worldP,				// src
+							input_worldP,				// src
 							NULL,						// area - null for all pixels
 							(void*)infoP,				// custom data pointer
 							tmpRender8,				// pixel function pointer
