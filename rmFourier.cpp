@@ -180,10 +180,10 @@ SmartRender(
 						err2 = PF_Err_NONE;
 
 	AEGP_SuiteHandler 	suites(in_data->pica_basicP);
-	PF_EffectWorld		*input_worldP = NULL,
-						*output_worldP = NULL,
-						*phase_worldP = NULL,
-						*copy_worldP = NULL;
+	PF_EffectWorld		*input_worldP = nullptr,
+						*output_worldP = nullptr,
+						*phase_worldP = nullptr,
+						copy_worldP;
 	PF_WorldSuite2		*wsP = NULL;
 	PF_PixelFormat		format = PF_PixelFormat_INVALID;
 	PF_ParamDef			phaseLayerParam;
@@ -325,22 +325,22 @@ SmartRender(
 								ERR(wsP->PF_NewWorld(in_data->effect_ref,
 									infoP->inWidth,
 									infoP->inHeight,
-									TRUE,
+									NULL,
 									PF_PixelFormat_ARGB128,
-									infoP->copy_worldP));
+									&copy_worldP));
 
 								ERR(suites.WorldTransformSuite1()->copy(
 									in_data->effect_ref,
 									output_worldP,
-									copy_worldP,
+									&copy_worldP,
 									NULL,
 									NULL));
 
-								infoP->copy_worldP = copy_worldP;
+								infoP->copy_worldP = &copy_worldP;
 
 								// 
 								ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
-									infoP->inWidth,
+									infoP->inHeight,
 									(void*)infoP,
 									fftShift));
 

@@ -58,7 +58,12 @@ fftShift(
 		if (xL2 >= siP->inWidth) xL2 = xL2 - siP->inWidth;
 		if (yL2 >= siP->inHeight) yL2 = yL2 - siP->inHeight;
 
-		
+		unsigned long srcPPixel = (yL2 * siP->inWidth) + xL2;
+		unsigned long dstPPixel = (yL * siP->inWidth) + xL;
+		PF_PixelFloat *srcPixel = (PF_PixelFloat*)((char*)siP->copy_worldP->data + (srcPPixel * sizeof(PF_PixelFloat)));
+		PF_PixelFloat *dstPixel = (PF_PixelFloat*)((char*)siP->output_worldP->data + (dstPPixel * sizeof(PF_PixelFloat)));
+	
+		*dstPixel = *srcPixel;
 	}
 
 	return err;
