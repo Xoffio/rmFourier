@@ -77,7 +77,8 @@ typedef struct {
 	PF_Boolean							no_opB;
 	PF_EffectWorld						*output_worldP,
 										*input_worldP,
-										*tmp_worldP;
+										*tmp_worldP,
+										*copy_worldP;
 
 	bool								inverseCB,
 										fftPhase;
@@ -169,6 +170,13 @@ ifftColumnsTh(
 	A_long numOfIterations);
 
 PF_Err
+fftShift(
+	void *refcon,
+	A_long threadNum,
+	A_long yL,
+	A_long numOfIterations);
+
+PF_Err
 tmpRender16(
 	void			*refcon,
 	A_long 			xL,
@@ -183,5 +191,12 @@ tmpRender8(
 	A_long 			yL,
 	PF_Pixel8 	*inP,
 	PF_Pixel8 	*outP);
+
+PF_Err
+pixelToVector(
+	void *refcon,
+	A_long threadNum,
+	A_long iterationCount,
+	A_long numOfIterations);
 
 #endif // RMFOURIER_H

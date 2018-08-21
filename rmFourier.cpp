@@ -182,7 +182,8 @@ SmartRender(
 	AEGP_SuiteHandler 	suites(in_data->pica_basicP);
 	PF_EffectWorld		*input_worldP = NULL,
 						*output_worldP = NULL,
-						*phase_worldP = NULL;
+						*phase_worldP = NULL,
+						*copy_worldP = NULL;
 	PF_WorldSuite2		*wsP = NULL;
 	PF_PixelFormat		format = PF_PixelFormat_INVALID;
 	PF_ParamDef			phaseLayerParam;
@@ -321,17 +322,29 @@ SmartRender(
 								output_worldP
 								));*/
 
-								// Circular shift
-								ERR(suites.IterateFloatSuite1()->iterate(// TODO: to perfoemr faster give an area
-									in_data,
-									0,							// progress base
-									infoP->inHeight,			// progress final
-									output_worldP,				// src
-									NULL,						// area - null for all pixels
-									(void*)infoP,				// custom data pointer
-									circularShift,				// pixel function pointer
-									output_worldP
-								));
+								ERR(wsP->PF_NewWorld(in_data->effect_ref,
+									infoP->inWidth,
+									infoP->inHeight,
+									TRUE,
+									PF_PixelFormat_ARGB128,
+									infoP->copy_worldP));
+
+								ERR(suites.WorldTransformSuite1()->copy(
+									in_data->effect_ref,
+									output_worldP,
+									copy_worldP,
+									NULL,
+									NULL));
+
+								infoP->copy_worldP = copy_worldP;
+
+								// 
+								ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
+									infoP->inWidth,
+									(void*)infoP,
+									fftShift));
+
+								
 							}
 
 							if (infoP->inverseCB) {
