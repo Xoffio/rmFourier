@@ -177,6 +177,13 @@ fftShift(
 	A_long numOfIterations);
 
 PF_Err
+ifftShift(
+	void *refcon,
+	A_long threadNum,
+	A_long yL,
+	A_long numOfIterations);
+
+PF_Err
 tmpRender16(
 	void			*refcon,
 	A_long 			xL,

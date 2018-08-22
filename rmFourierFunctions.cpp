@@ -70,6 +70,39 @@ fftShift(
 }
 
 PF_Err
+ifftShift(
+	void *refcon,
+	A_long threadNum,
+	A_long yL,
+	A_long numOfIterations)
+{
+	register rmFourierInfo	*siP = (rmFourierInfo*)refcon;
+	PF_Err				err = PF_Err_NONE;
+
+	AEGP_SuiteHandler suites(siP->in_data.pica_basicP);
+
+	A_long	hHalf = siP->inHeight / 2,
+			wHalf = siP->inWidth / 2,
+			yL2 = yL - hHalf;
+
+	for (A_long xL = 0; xL < siP->inWidth; xL++) {
+		A_long xL2 = xL - wHalf;
+
+		if (xL2 < 0) xL2 = xL2 + siP->inWidth;
+		if (yL2 < 0) yL2 = yL2 + siP->inHeight;
+
+		unsigned long srcPPixel = (yL2 * siP->inWidth) + xL2;
+		unsigned long dstPPixel = (yL * siP->inWidth) + xL;
+		PF_PixelFloat *srcPixel = (PF_PixelFloat*)((char*)siP->input_worldP->data + (srcPPixel * sizeof(PF_PixelFloat)));
+		PF_PixelFloat *dstPixel = (PF_PixelFloat*)((char*)siP->output_worldP->data + (dstPPixel * sizeof(PF_PixelFloat)));
+
+		*dstPixel = *srcPixel;
+	}
+
+	return err;
+}
+
+PF_Err
 circularShift(
 	void			*refcon,
 	A_long 			xL,

@@ -251,7 +251,7 @@ SmartRender(
 							if (infoP->inverseCB) {
 								infoP->tmp_worldP = phase_worldP;
 								// Circular shift
-								ERR(suites.IterateFloatSuite1()->iterate( // TODO: to perfoemr faster give an area
+								/*ERR(suites.IterateFloatSuite1()->iterate( // TODO: to perfoemr faster give an area
 									in_data,
 									0,							// progress base
 									infoP->inHeight,		// progress final
@@ -260,7 +260,13 @@ SmartRender(
 									(void*)infoP,				// custom data pointer
 									circularShift,				// pixel function pointer
 									output_worldP
-								));
+								));*/
+
+								// Compute the fftshift
+								ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
+									infoP->inHeight,
+									(void*)infoP,
+									ifftShift));
 
 								// IFFT the Rows
 								ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
@@ -322,29 +328,30 @@ SmartRender(
 								output_worldP
 								));*/
 
-								ERR(wsP->PF_NewWorld(in_data->effect_ref,
+								// Before I do the fftshift I need to make a copy of 
+								// the output world so I can compute the effect in
+								// multithread mode. (tmp solution. I might change this in the future)
+								ERR(wsP->PF_NewWorld(in_data->effect_ref,	// New world
 									infoP->inWidth,
 									infoP->inHeight,
 									NULL,
 									PF_PixelFormat_ARGB128,
 									&copy_worldP));
 
-								ERR(suites.WorldTransformSuite1()->copy(
+								ERR(suites.WorldTransformSuite1()->copy(	// Copy the output data to the new world
 									in_data->effect_ref,
 									output_worldP,
 									&copy_worldP,
 									NULL,
 									NULL));
 
-								infoP->copy_worldP = &copy_worldP;
+								infoP->copy_worldP = &copy_worldP;	// Get the pointer 
 
-								// 
+								// Compute the fftshift
 								ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
 									infoP->inHeight,
 									(void*)infoP,
 									fftShift));
-
-								
 							}
 
 							if (infoP->inverseCB) {
