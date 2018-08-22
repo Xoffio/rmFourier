@@ -119,14 +119,6 @@ normalizeImg(
 	PF_PixelFloat 	*outP);
 
 PF_Err
-circularShift(
-	void			*refcon,
-	A_long 			xL,
-	A_long 			yL,
-	PF_PixelFloat 	*inP,
-	PF_PixelFloat 	*outP);
-
-PF_Err
 pixelToVector(
 	void *refcon,
 	A_long threadNum,

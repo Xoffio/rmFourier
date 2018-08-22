@@ -103,51 +103,6 @@ ifftShift(
 }
 
 PF_Err
-circularShift(
-	void			*refcon,
-	A_long 			xL,
-	A_long 			yL,
-	PF_PixelFloat 	*inP,
-	PF_PixelFloat 	*outP)
-{
-	// TODO: 
-	// ODD numbeers.
-	register rmFourierInfo	*siP = (rmFourierInfo*)refcon;
-	PF_Err				err = PF_Err_NONE;
-
-	AEGP_SuiteHandler suites(siP->in_data.pica_basicP);
-
-	A_long xL2 = xL; 
-	A_long yL2 = yL;
-	A_long wHalf = siP->inWidth / 2;
-	A_long hHalf = siP->inHeight / 2;
-
-	if (yL < hHalf) yL2 = yL + hHalf;
-	else yL2 = yL - hHalf;
-
-	if (xL < wHalf) {
-		xL2 = xL + wHalf;
-
-		if (siP->inWidth % 2 != 0) xL2++;
-		if (siP->inHeight % 2 != 0) yL2++;
-
-		unsigned long dstPointAt = (yL2 * siP->inWidth) + xL2;
-
-		PF_PixelFloat *pixelPointerAt = (PF_PixelFloat*)((char*)siP->output_worldP->data + (dstPointAt * sizeof(PF_PixelFloat)));
-		PF_PixelFloat tmpPixel = *inP;
-
-		if (!siP->inverseCB) *outP = *pixelPointerAt;
-		else {
-			*outP = *(PF_PixelFloat*)((char*)siP->input_worldP->data + (dstPointAt * sizeof(PF_PixelFloat)));
-		}
-
-		*pixelPointerAt = tmpPixel;
-	}
-	
-	return err;
-}
-
-PF_Err
 pixelToVector(
 	void *refcon,
 	A_long threadNum,
