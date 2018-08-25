@@ -56,11 +56,11 @@ ParamsSetup (
 	PF_ADD_LAYER("Select layer", PF_LayerDefault_NONE, PHASE_LAYER_DISK_ID);
 
 	AEFX_CLR_STRUCT(def);
-	//def.flags = PF_ParamFlag_SUPERVISE | PF_ParamFlag_CANNOT_TIME_VARY;
+	def.flags = PF_ParamFlag_SUPERVISE | PF_ParamFlag_CANNOT_TIME_VARY;
 	PF_ADD_CHECKBOX("Inverse", "Calculate inverse Fourier transform", FALSE, 0, INVERSE_FFT_DISK_ID);
 
 	AEFX_CLR_STRUCT(def);
-	//def.flags = PF_ParamFlag_SUPERVISE | PF_ParamFlag_CANNOT_TIME_VARY;
+	def.flags = PF_ParamFlag_SUPERVISE | PF_ParamFlag_CANNOT_TIME_VARY;
 	PF_ADD_CHECKBOX("Phase", "Get the phase from the Fourier transform", FALSE, 0, FFT_PHASE_DISK_ID);
 	
 	out_data->num_params = RMFOURIER_NUM_PARAMS;
@@ -81,43 +81,16 @@ UserChangedParam(
 
 	if (which_hitP->param_index == RMFOURIER_INVERSE_FFT){
 		if (params[RMFOURIER_INVERSE_FFT]->u.bd.value == TRUE) {
-			params[RMFOURIER_FFT_PHASE]->u.bd.value = FALSE;
-
-			ERR(suites.ParamUtilsSuite3()->PF_UpdateParamUI(in_data->effect_ref,
-				RMFOURIER_FFT_PHASE,
-				params[RMFOURIER_FFT_PHASE]));
+			params[RMFOURIER_FFT_PHASE]->u.bd.value = FALSE; 
+			params[RMFOURIER_FFT_PHASE]->uu.change_flags = PF_ChangeFlag_CHANGED_VALUE;
 		}
 	}
 
 	if (which_hitP->param_index == RMFOURIER_FFT_PHASE) {
 		if (params[RMFOURIER_FFT_PHASE]->u.bd.value == TRUE) {
 			params[RMFOURIER_INVERSE_FFT]->u.bd.value = FALSE;
-
-			ERR(suites.ParamUtilsSuite3()->PF_UpdateParamUI(in_data->effect_ref,
-				RMFOURIER_FFT_PHASE,
-				params[RMFOURIER_FFT_PHASE]));
+			params[RMFOURIER_INVERSE_FFT]->uu.change_flags = PF_ChangeFlag_CHANGED_VALUE;
 		}
-	}
-
-	return err;
-}
-
-static PF_Err
-UpdateParameterUI(
-	PF_InData			*in_data,
-	PF_OutData			*out_data,
-	PF_ParamDef			*params[],
-	PF_LayerDef			*outputP)
-{
-	PF_Err				err = PF_Err_NONE;
-	AEGP_SuiteHandler	suites(in_data->pica_basicP);
-
-	if (params[RMFOURIER_INVERSE_FFT]->u.bd.value == TRUE) {
-		params[RMFOURIER_FFT_PHASE]->u.bd.value = FALSE;
-
-		ERR(suites.ParamUtilsSuite3()->PF_UpdateParamUI(in_data->effect_ref,
-			RMFOURIER_FFT_PHASE,
-			params[RMFOURIER_FFT_PHASE]));
 	}
 
 	return err;
@@ -555,12 +528,6 @@ EntryPointFunc (
 					output,
 					reinterpret_cast<const PF_UserChangedParamExtra *>(extra));
 				break;
-
-			case PF_Cmd_UPDATE_PARAMS_UI:
-				err = UpdateParameterUI(in_data,
-					out_data,
-					params,
-					output);
 		}
 	}
 	catch(PF_Err &thrown_err){
