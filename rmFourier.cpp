@@ -32,7 +32,8 @@ GlobalSetup (
 										BUILD_VERSION);
 
 	out_data->out_flags |=	PF_OutFlag_PIX_INDEPENDENT |
-							PF_OutFlag_USE_OUTPUT_EXTENT;
+							PF_OutFlag_USE_OUTPUT_EXTENT |
+							PF_OutFlag_SEND_UPDATE_PARAMS_UI;
 
 	out_data->out_flags2 =	PF_OutFlag2_SUPPORTS_SMART_RENDER |
 							PF_OutFlag2_FLOAT_COLOR_AWARE;
@@ -51,15 +52,73 @@ ParamsSetup (
 	PF_ParamDef	def;	
 
 	AEFX_CLR_STRUCT(def);
+	//def.flags = PF_ParamFlag_SUPERVISE | PF_ParamFlag_CANNOT_TIME_VARY;
 	PF_ADD_LAYER("Select layer", PF_LayerDefault_NONE, PHASE_LAYER_DISK_ID);
 
 	AEFX_CLR_STRUCT(def);
+	//def.flags = PF_ParamFlag_SUPERVISE | PF_ParamFlag_CANNOT_TIME_VARY;
 	PF_ADD_CHECKBOX("Inverse", "Calculate inverse Fourier transform", FALSE, 0, INVERSE_FFT_DISK_ID);
 
 	AEFX_CLR_STRUCT(def);
+	//def.flags = PF_ParamFlag_SUPERVISE | PF_ParamFlag_CANNOT_TIME_VARY;
 	PF_ADD_CHECKBOX("Phase", "Get the phase from the Fourier transform", FALSE, 0, FFT_PHASE_DISK_ID);
 	
 	out_data->num_params = RMFOURIER_NUM_PARAMS;
+
+	return err;
+}
+
+static PF_Err
+UserChangedParam(
+	PF_InData						*in_data,
+	PF_OutData						*out_data,
+	PF_ParamDef						*params[],
+	PF_LayerDef						*outputP,
+	const PF_UserChangedParamExtra	*which_hitP)
+{
+	PF_Err				err = PF_Err_NONE;
+	AEGP_SuiteHandler	suites(in_data->pica_basicP);
+
+	if (which_hitP->param_index == RMFOURIER_INVERSE_FFT){
+		if (params[RMFOURIER_INVERSE_FFT]->u.bd.value == TRUE) {
+			params[RMFOURIER_FFT_PHASE]->u.bd.value = FALSE;
+
+			ERR(suites.ParamUtilsSuite3()->PF_UpdateParamUI(in_data->effect_ref,
+				RMFOURIER_FFT_PHASE,
+				params[RMFOURIER_FFT_PHASE]));
+		}
+	}
+
+	if (which_hitP->param_index == RMFOURIER_FFT_PHASE) {
+		if (params[RMFOURIER_FFT_PHASE]->u.bd.value == TRUE) {
+			params[RMFOURIER_INVERSE_FFT]->u.bd.value = FALSE;
+
+			ERR(suites.ParamUtilsSuite3()->PF_UpdateParamUI(in_data->effect_ref,
+				RMFOURIER_FFT_PHASE,
+				params[RMFOURIER_FFT_PHASE]));
+		}
+	}
+
+	return err;
+}
+
+static PF_Err
+UpdateParameterUI(
+	PF_InData			*in_data,
+	PF_OutData			*out_data,
+	PF_ParamDef			*params[],
+	PF_LayerDef			*outputP)
+{
+	PF_Err				err = PF_Err_NONE;
+	AEGP_SuiteHandler	suites(in_data->pica_basicP);
+
+	if (params[RMFOURIER_INVERSE_FFT]->u.bd.value == TRUE) {
+		params[RMFOURIER_FFT_PHASE]->u.bd.value = FALSE;
+
+		ERR(suites.ParamUtilsSuite3()->PF_UpdateParamUI(in_data->effect_ref,
+			RMFOURIER_FFT_PHASE,
+			params[RMFOURIER_FFT_PHASE]));
+	}
 
 	return err;
 }
@@ -149,6 +208,14 @@ PreRender(
 					infoP->inverseCB 	= inverseFftParam.u.bd.value;
 					infoP->fftPhase = phaseParam.u.bd.value;
 
+					// TODO: Show messages for invalid inputs
+					/*if (infoP->inverseCB) {
+						if ((phase_result.ref_width != in_result.ref_width) || (phase_result.ref_height != in_result.ref_height)) {
+							auto ansiSuite = AEFX_SuiteScoper<PF_ANSICallbacksSuite1>(in_data, kPFANSISuite, kPFANSISuiteVersion1);
+							ansiSuite->sprintf(out_data->return_msg, "Don't be stupid!");
+						}
+					}*/
+
 					UnionLRect(&in_result.result_rect, &extra->output->result_rect);
 					UnionLRect(&in_result.max_result_rect, &extra->output->max_result_rect);
 				}
@@ -195,6 +262,16 @@ SmartRender(
 			ERR((extra->cb->checkout_layer_pixels(in_data->effect_ref, RMFOURIER_INPUT, &input_worldP)));
 			ERR((extra->cb->checkout_layer_pixels(in_data->effect_ref, RMFOURIER_PHASE_LAYER, &phase_worldP)));
 			ERR(extra->cb->checkout_output(in_data->effect_ref, &output_worldP));
+
+			/*A_long numOfLayers = NULL;
+			AEGP_LayerH  activeLayer;
+			AEGP_MaskRefH mask01;*/
+
+			// Check mask
+			/*ERR(suites.LayerSuite8()->AEGP_GetActiveLayer(&activeLayer));
+			ERR(suites.MaskSuite6()->AEGP_GetLayerNumMasks(activeLayer, &numOfLayers));
+			ERR(suites.MaskSuite6()->AEGP_GetLayerMaskByIndex(activeLayer, 0, &mask01));
+			ERR(suites.MaskSuite6()->AEGP_DisposeMask(mask01));*/
 
 			if (!err && output_worldP) {
 				ERR(AEFX_AcquireSuite(in_data,
@@ -411,10 +488,6 @@ SmartRender(
 				else {
 					// copy input buffer;
 					ERR(PF_COPY(input_worldP, output_worldP, NULL, NULL));
-
-					auto ansiSuite = AEFX_SuiteScoper<PF_ANSICallbacksSuite1>(in_data, kPFANSISuite, kPFANSISuiteVersion1);
-					ansiSuite->sprintf(out_data->return_msg, "Don't be stupid!");
-					
 				}
 			}
 		}
@@ -474,6 +547,20 @@ EntryPointFunc (
 			case PF_Cmd_SMART_RENDER:
 				err = SmartRender(in_data, out_data, (PF_SmartRenderExtra*)extra);
 				break;
+
+			case PF_Cmd_USER_CHANGED_PARAM:
+				err = UserChangedParam(in_data,
+					out_data,
+					params,
+					output,
+					reinterpret_cast<const PF_UserChangedParamExtra *>(extra));
+				break;
+
+			case PF_Cmd_UPDATE_PARAMS_UI:
+				err = UpdateParameterUI(in_data,
+					out_data,
+					params,
+					output);
 		}
 	}
 	catch(PF_Err &thrown_err){
