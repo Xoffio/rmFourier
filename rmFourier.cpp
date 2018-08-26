@@ -79,13 +79,39 @@ UserChangedParam(
 	PF_Err				err = PF_Err_NONE;
 	AEGP_SuiteHandler	suites(in_data->pica_basicP);
 
+	// If I have the inverseCB activated. Then, desactivate the pahseCB
 	if (which_hitP->param_index == RMFOURIER_INVERSE_FFT){
-		if (params[RMFOURIER_INVERSE_FFT]->u.bd.value == TRUE) {
-			params[RMFOURIER_FFT_PHASE]->u.bd.value = FALSE; 
-			params[RMFOURIER_FFT_PHASE]->uu.change_flags = PF_ChangeFlag_CHANGED_VALUE;
+		if (params[RMFOURIER_INVERSE_FFT]->u.bd.value == TRUE){
+
+			if (params[RMFOURIER_FFT_PHASE]->u.bd.value == TRUE) {
+				params[RMFOURIER_FFT_PHASE]->u.bd.value = FALSE;
+				params[RMFOURIER_FFT_PHASE]->uu.change_flags = PF_ChangeFlag_CHANGED_VALUE;
+			}
+
+			PF_ParamDef checkout;
+			AEFX_CLR_STRUCT(checkout);
+			ERR(PF_CHECKOUT_PARAM(
+				in_data,
+				RMFOURIER_PHASE_LAYER,
+				in_data->current_time,
+				in_data->time_step,
+				in_data->time_scale,
+				&checkout
+			));
+
+			if (!checkout.u.ld.data) {
+				params[RMFOURIER_INVERSE_FFT]->u.bd.value = FALSE;
+				params[RMFOURIER_INVERSE_FFT]->uu.change_flags = PF_ChangeFlag_CHANGED_VALUE;
+
+				auto ansiSuite = AEFX_SuiteScoper<PF_ANSICallbacksSuite1>(in_data, kPFANSISuite, kPFANSISuiteVersion1);
+				ansiSuite->sprintf(out_data->return_msg, "Please select a 'Phase layer' to get the inverse fft.");
+			}
+
+			err = PF_CHECKIN_PARAM(in_data, &checkout);
 		}
 	}
 
+	// If I have the pahseCB activated. Then, desactivate the inverseCB
 	if (which_hitP->param_index == RMFOURIER_FFT_PHASE) {
 		if (params[RMFOURIER_FFT_PHASE]->u.bd.value == TRUE) {
 			params[RMFOURIER_INVERSE_FFT]->u.bd.value = FALSE;
@@ -180,14 +206,6 @@ PreRender(
 					// Here you get the input values
 					infoP->inverseCB 	= inverseFftParam.u.bd.value;
 					infoP->fftPhase = phaseParam.u.bd.value;
-
-					// TODO: Show messages for invalid inputs
-					/*if (infoP->inverseCB) {
-						if ((phase_result.ref_width != in_result.ref_width) || (phase_result.ref_height != in_result.ref_height)) {
-							auto ansiSuite = AEFX_SuiteScoper<PF_ANSICallbacksSuite1>(in_data, kPFANSISuite, kPFANSISuiteVersion1);
-							ansiSuite->sprintf(out_data->return_msg, "Don't be stupid!");
-						}
-					}*/
 
 					UnionLRect(&in_result.result_rect, &extra->output->result_rect);
 					UnionLRect(&in_result.max_result_rect, &extra->output->max_result_rect);
