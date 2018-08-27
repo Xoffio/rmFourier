@@ -35,30 +35,29 @@ using std::vector;
 // Private function prototypes
 static size_t reverseBits(size_t x, int n);
 
-void fft::transform(vector<complex<double> > &vec) {
+void fft::transform(vector<complex<double> > &vec, int &levels, std::vector<std::complex<double> > &expTable) {
 	size_t n = vec.size();
 	if (n == 0)
 		return;
 
 	else if ((n & (n - 1)) == 0)  // Is power of 2
-		transformRadix2(vec);
+		transformRadix2(vec, levels, expTable);
 	else  // More complicated algorithm for arbitrary sizes
 		transformBluestein(vec);
 }
 
-
 void fft::inverseTransform(vector<complex<double> > &vec) {
 	std::transform(vec.cbegin(), vec.cend(), vec.begin(),
 		static_cast<complex<double>(*)(const complex<double> &)>(std::conj));
-	transform(vec);
+	//transform(vec);
 	std::transform(vec.cbegin(), vec.cend(), vec.begin(),
 		static_cast<complex<double>(*)(const complex<double> &)>(std::conj));
 }
 
-
-void fft::transformRadix2(vector<complex<double> > &vec) {
-	// Length variables
+void fft::transformRadix2(vector<complex<double> > &vec, int &levels, std::vector<std::complex<double> > &expTable) {
 	size_t n = vec.size();
+	// Length variables
+	/*size_t n = vec.size();
 	int levels = 0;  // Compute levels = floor(log2(n))
 	for (size_t temp = n; temp > 1U; temp >>= 1)
 		levels++;
@@ -68,7 +67,7 @@ void fft::transformRadix2(vector<complex<double> > &vec) {
 	// Trignometric table
 	vector<complex<double> > expTable(n / 2);
 	for (size_t i = 0; i < n / 2; i++)
-		expTable[i] = std::exp(complex<double>(0, -2 * M_PI * i / n));
+		expTable[i] = std::exp(complex<double>(0, -2 * M_PI * i / n));*/
 
 	// Bit-reversed addressing permutation
 	for (size_t i = 0; i < n; i++) {
@@ -143,8 +142,8 @@ void fft::convolve(
 		throw "Mismatched lengths";
 	vector<complex<double> > xv = xvec;
 	vector<complex<double> > yv = yvec;
-	transform(xv);
-	transform(yv);
+	//transform(xv);
+	//transform(yv);
 	for (size_t i = 0; i < n; i++)
 		xv[i] *= yv[i];
 	inverseTransform(xv);

@@ -203,9 +203,9 @@ fftRowsTh(
 		currentRowVecB.push_back(siP->imgVectorB[currentIndex]);
 	}
 
-	fft::transform(currentRowVecR);
-	fft::transform(currentRowVecG);
-	fft::transform(currentRowVecB);
+	fft::transform(currentRowVecR, siP->levels, siP->expTable);
+	fft::transform(currentRowVecG, siP->levels, siP->expTable);
+	fft::transform(currentRowVecB, siP->levels, siP->expTable);
 
 	for (A_long i = 0; i < siP->inWidth; i++) {
 		A_long currentIndex = (siP->inWidth*iterationCount) + i;
@@ -238,9 +238,9 @@ fftColumnsTh(
 		currentColVecB.push_back(siP->imgVectorB[currentIndex]);
 	}
 
-	fft::transform(currentColVecR);
-	fft::transform(currentColVecG);
-	fft::transform(currentColVecB);
+	fft::transform(currentColVecR, siP->levels, siP->expTable);
+	fft::transform(currentColVecG, siP->levels, siP->expTable);
+	fft::transform(currentColVecB, siP->levels, siP->expTable);
 
 	for (A_long i = 0; i < siP->inHeight; i++) {
 		A_long currentIndex = (siP->inWidth*i) + iterationCount;
@@ -372,4 +372,28 @@ tmpRender8(
 	*outP = *inP;
 
 	return err;
+}
+
+void preTransform(A_long vSize, int &levels, std::vector<std::complex<double> > &expTable) {
+	const double M_PI = 3.14159265358979323846;
+
+	// Length variables
+	size_t n = vSize;//vec.size();
+
+	if ((n & (n - 1)) == 0) {  // If is power of 2
+		levels = 0;  // Compute levels = floor(log2(n))
+		for (size_t temp = n; temp > 1U; temp >>= 1)
+			levels++;
+		if (static_cast<size_t>(1U) << levels != n)
+			throw "Length is not a power of 2";
+
+		// Trignometric table
+		//std::vector<std::complex<double> > expTable(n / 2);
+		for (size_t i = 0; i < n / 2; i++)
+			expTable.push_back(std::exp(std::complex<double>(0, -2 * M_PI * i / n)));
+		//expTable[i] = std::exp(std::complex<double>(0, -2 * M_PI * i / n));
+	}
+	else{ 
+
+	}
 }

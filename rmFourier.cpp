@@ -52,7 +52,7 @@ ParamsSetup (
 	PF_ParamDef	def;	
 
 	AEFX_CLR_STRUCT(def);
-	//def.flags = PF_ParamFlag_SUPERVISE | PF_ParamFlag_CANNOT_TIME_VARY;
+	def.flags = PF_ParamFlag_SUPERVISE;
 	PF_ADD_LAYER("Select layer", PF_LayerDefault_NONE, PHASE_LAYER_DISK_ID);
 
 	AEFX_CLR_STRUCT(def);
@@ -80,7 +80,7 @@ UserChangedParam(
 	AEGP_SuiteHandler	suites(in_data->pica_basicP);
 
 	// If I have the inverseCB activated. Then, desactivate the pahseCB
-	if (which_hitP->param_index == RMFOURIER_INVERSE_FFT){
+	if (which_hitP->param_index == RMFOURIER_INVERSE_FFT || which_hitP->param_index == RMFOURIER_PHASE_LAYER){
 		if (params[RMFOURIER_INVERSE_FFT]->u.bd.value == TRUE){
 
 			if (params[RMFOURIER_FFT_PHASE]->u.bd.value == TRUE) {
@@ -256,10 +256,10 @@ SmartRender(
 
 			/*A_long numOfLayers = NULL;
 			AEGP_LayerH  activeLayer;
-			AEGP_MaskRefH mask01;*/
+			AEGP_MaskRefH mask01;
 
 			// Check mask
-			/*ERR(suites.LayerSuite8()->AEGP_GetActiveLayer(&activeLayer));
+			ERR(suites.LayerSuite8()->AEGP_GetActiveLayer(&activeLayer));
 			ERR(suites.MaskSuite6()->AEGP_GetLayerNumMasks(activeLayer, &numOfLayers));
 			ERR(suites.MaskSuite6()->AEGP_GetLayerMaskByIndex(activeLayer, 0, &mask01));
 			ERR(suites.MaskSuite6()->AEGP_DisposeMask(mask01));*/
@@ -343,6 +343,9 @@ SmartRender(
 											pixelToVector));
 
 										ERR(suites.IterateSuite1()->AEGP_GetNumThreads(&infoP->nMaxThreads));
+
+										// Pre-Transform
+										preTransform(infoP->inWidth, infoP->levels, infoP->expTable);
 
 										// FFT the Rows
 										ERR(suites.IterateSuite1()->AEGP_IterateGeneric(

@@ -90,6 +90,9 @@ typedef struct {
 										outWidth, outHeight;
 	A_long								nMaxThreads;
 	int tmpCount, tmpMax;
+
+	int									levels;
+	std::vector<std::complex<double>>	expTable;
 } rmFourierInfo;
 
 
@@ -197,5 +200,7 @@ pixelToVector(
 	A_long threadNum,
 	A_long iterationCount,
 	A_long numOfIterations);
+
+void preTransform(A_long vSize, int &levels, std::vector<std::complex<double> > &expTable);
 
 #endif // RMFOURIER_H

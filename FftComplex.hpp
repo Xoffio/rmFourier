@@ -31,7 +31,7 @@ namespace fft {
 	* Computes the discrete Fourier transform (DFT) of the given complex vector, storing the result back into the vector.
 	* The vector can have any length. This is a wrapper function.
 	*/
-	void transform(std::vector<std::complex<double> > &vec);
+	void transform(std::vector<std::complex<double> > &vec, int &levels, std::vector<std::complex<double> > &expTable);
 
 
 	/*
@@ -45,7 +45,7 @@ namespace fft {
 	* Computes the discrete Fourier transform (DFT) of the given complex vector, storing the result back into the vector.
 	* The vector's length must be a power of 2. Uses the Cooley-Tukey decimation-in-time radix-2 algorithm.
 	*/
-	void transformRadix2(std::vector<std::complex<double> > &vec);
+	void transformRadix2(std::vector<std::complex<double> > &vec, int &levels, std::vector<std::complex<double> > &expTable);
 
 
 	/*
