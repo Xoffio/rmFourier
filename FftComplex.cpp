@@ -27,6 +27,7 @@
 #include <cstddef>
 #include <cstdint>
 #include "FftComplex.hpp"
+#include "rmFourier.h"
 
 using std::complex;
 using std::size_t;
@@ -35,26 +36,30 @@ using std::vector;
 // Private function prototypes
 static size_t reverseBits(size_t x, int n);
 
-void fft::transform(vector<complex<double> > &vec, int &levels, std::vector<std::complex<double> > &expTable) {
+void fft::transform(vector<complex<double> > &vec, void *refcon) {
+	register rmFourierInfo	*siP = (rmFourierInfo*)refcon;
+
 	size_t n = vec.size();
 	if (n == 0)
 		return;
 
-	else if ((n & (n - 1)) == 0)  // Is power of 2
-		transformRadix2(vec, levels, expTable);
-	else  // More complicated algorithm for arbitrary sizes
-		transformBluestein(vec);
+	//else if ((n & (n - 1)) == 0)  // Is power of 2
+	else if(siP->transformType == 1)
+		transformRadix2(vec, siP);
+	else if (siP->transformType == 2)  // More complicated algorithm for arbitrary sizes
+		transformBluestein(vec, siP);
 }
 
-void fft::inverseTransform(vector<complex<double> > &vec) {
+void fft::inverseTransform(vector<complex<double> > &vec, void *refcon) {
 	std::transform(vec.cbegin(), vec.cend(), vec.begin(),
 		static_cast<complex<double>(*)(const complex<double> &)>(std::conj));
-	//transform(vec);
+	transform(vec, refcon);
 	std::transform(vec.cbegin(), vec.cend(), vec.begin(),
 		static_cast<complex<double>(*)(const complex<double> &)>(std::conj));
 }
 
-void fft::transformRadix2(vector<complex<double> > &vec, int &levels, std::vector<std::complex<double> > &expTable) {
+void fft::transformRadix2(vector<complex<double> > &vec, void *refcon) {
+	register rmFourierInfo	*siP = (rmFourierInfo*)refcon;
 	size_t n = vec.size();
 	// Length variables
 	/*size_t n = vec.size();
@@ -71,7 +76,7 @@ void fft::transformRadix2(vector<complex<double> > &vec, int &levels, std::vecto
 
 	// Bit-reversed addressing permutation
 	for (size_t i = 0; i < n; i++) {
-		size_t j = reverseBits(i, levels);
+		size_t j = reverseBits(i, siP->levels);
 		if (j > i)
 			std::swap(vec[i], vec[j]);
 	}
@@ -82,7 +87,7 @@ void fft::transformRadix2(vector<complex<double> > &vec, int &levels, std::vecto
 		size_t tablestep = n / size;
 		for (size_t i = 0; i < n; i += size) {
 			for (size_t j = i, k = 0; j < i + halfsize; j++, k += tablestep) {
-				complex<double> temp = vec[j + halfsize] * expTable[k];
+				complex<double> temp = vec[j + halfsize] * siP->expTable[k];
 				vec[j + halfsize] = vec[j] - temp;
 				vec[j] += temp;
 			}
@@ -93,10 +98,12 @@ void fft::transformRadix2(vector<complex<double> > &vec, int &levels, std::vecto
 }
 
 
-void fft::transformBluestein(vector<complex<double> > &vec) {
+void fft::transformBluestein(vector<complex<double> > &vec, void *refcon) {
+	register rmFourierInfo	*siP = (rmFourierInfo*)refcon;
+
 	// Find a power-of-2 convolution length m such that m >= n * 2 + 1
 	size_t n = vec.size();
-	size_t m = 1;
+	/*size_t m = 1;
 	while (m / 2 <= n) {
 		if (m > SIZE_MAX / 2)
 			throw "Vector too large";
@@ -111,31 +118,33 @@ void fft::transformBluestein(vector<complex<double> > &vec) {
 		double angle = M_PI * temp / n;
 		// Less accurate alternative if long long is unavailable: double angle = M_PI * i * i / n;
 		expTable[i] = std::exp(complex<double>(0, -angle));
-	}
+	}*/
 
 	// Temporary vectors and preprocessing
-	vector<complex<double> > av(m);
+	vector<complex<double> > av(siP->m);
 	for (size_t i = 0; i < n; i++)
-		av[i] = vec[i] * expTable[i];
-	vector<complex<double> > bv(m);
+		av[i] = vec[i] * siP->expTable[i];
+
+	/*vector<complex<double> > bv(m);
 	bv[0] = expTable[0];
 	for (size_t i = 1; i < n; i++)
-		bv[i] = bv[m - i] = std::conj(expTable[i]);
+		bv[i] = bv[m - i] = std::conj(expTable[i]);*/
 
 	// Convolution
-	vector<complex<double> > cv(m);
-	convolve(av, bv, cv);
+	vector<complex<double> > cv(siP->m);
+	convolve(av, siP->bv, cv, siP);
 
 	// Postprocessing
 	for (size_t i = 0; i < n; i++)
-		vec[i] = cv[i] * expTable[i];
+		vec[i] = cv[i] * siP->expTable[i];
 }
 
 
 void fft::convolve(
 	const vector<complex<double> > &xvec,
 	const vector<complex<double> > &yvec,
-	vector<complex<double> > &outvec) {
+	vector<complex<double> > &outvec,
+	void *siP) {
 
 	size_t n = xvec.size();
 	if (n != yvec.size() || n != outvec.size())
@@ -146,7 +155,7 @@ void fft::convolve(
 	//transform(yv);
 	for (size_t i = 0; i < n; i++)
 		xv[i] *= yv[i];
-	inverseTransform(xv);
+	//inverseTransform(xv, levels, expTable);
 	for (size_t i = 0; i < n; i++)  // Scaling (because this FFT implementation omits it)
 		outvec[i] = xv[i] / static_cast<double>(n);
 }

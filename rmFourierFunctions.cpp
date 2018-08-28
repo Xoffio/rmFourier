@@ -203,9 +203,9 @@ fftRowsTh(
 		currentRowVecB.push_back(siP->imgVectorB[currentIndex]);
 	}
 
-	fft::transform(currentRowVecR, siP->levels, siP->expTable);
-	fft::transform(currentRowVecG, siP->levels, siP->expTable);
-	fft::transform(currentRowVecB, siP->levels, siP->expTable);
+	fft::transform(currentRowVecR, siP);
+	fft::transform(currentRowVecG, siP);
+	fft::transform(currentRowVecB, siP);
 
 	for (A_long i = 0; i < siP->inWidth; i++) {
 		A_long currentIndex = (siP->inWidth*iterationCount) + i;
@@ -238,9 +238,9 @@ fftColumnsTh(
 		currentColVecB.push_back(siP->imgVectorB[currentIndex]);
 	}
 
-	fft::transform(currentColVecR, siP->levels, siP->expTable);
-	fft::transform(currentColVecG, siP->levels, siP->expTable);
-	fft::transform(currentColVecB, siP->levels, siP->expTable);
+	fft::transform(currentColVecR, siP);
+	fft::transform(currentColVecG, siP);
+	fft::transform(currentColVecB, siP);
 
 	for (A_long i = 0; i < siP->inHeight; i++) {
 		A_long currentIndex = (siP->inWidth*i) + iterationCount;
@@ -289,9 +289,9 @@ ifftRowsTh(
 		currentRowVecB.push_back(invB);
 	}
 
-	fft::inverseTransform(currentRowVecR);
-	fft::inverseTransform(currentRowVecG);
-	fft::inverseTransform(currentRowVecB);
+	fft::inverseTransform(currentRowVecR, siP);
+	fft::inverseTransform(currentRowVecG, siP);
+	fft::inverseTransform(currentRowVecB, siP);
 
 	for (A_long i = 0; i < siP->inWidth; i++) {
 		A_long currentIndex = (siP->inWidth*iterationCount) + i;
@@ -324,9 +324,9 @@ ifftColumnsTh(
 		currentColVecB.push_back(siP->imgVectorB[currentIndex]);
 	}
 
-	fft::inverseTransform(currentColVecR);
-	fft::inverseTransform(currentColVecG);
-	fft::inverseTransform(currentColVecB);
+	fft::inverseTransform(currentColVecR, siP);
+	fft::inverseTransform(currentColVecG, siP);
+	fft::inverseTransform(currentColVecB, siP);
 
 	for (A_long i = 0; i < siP->inHeight; i++) {
 		A_long currentIndex = (siP->inWidth*i) + iterationCount;
@@ -374,26 +374,52 @@ tmpRender8(
 	return err;
 }
 
-void preTransform(A_long vSize, int &levels, std::vector<std::complex<double> > &expTable) {
+void preTransform(size_t vSize, void *refcon) {
 	const double M_PI = 3.14159265358979323846;
+	register rmFourierInfo	*siP = (rmFourierInfo*)refcon;
 
 	// Length variables
 	size_t n = vSize;//vec.size();
 
 	if ((n & (n - 1)) == 0) {  // If is power of 2
-		levels = 0;  // Compute levels = floor(log2(n))
+		siP->transformType = 1;
+		siP->levels = 0;  // Compute levels = floor(log2(n))
 		for (size_t temp = n; temp > 1U; temp >>= 1)
-			levels++;
-		if (static_cast<size_t>(1U) << levels != n)
+			siP->levels++;
+		if (static_cast<size_t>(1U) << siP->levels != n)
 			throw "Length is not a power of 2";
 
 		// Trignometric table
 		//std::vector<std::complex<double> > expTable(n / 2);
 		for (size_t i = 0; i < n / 2; i++)
-			expTable.push_back(std::exp(std::complex<double>(0, -2 * M_PI * i / n)));
+			siP->expTable.push_back(std::exp(std::complex<double>(0, -2 * M_PI * i / n)));
 		//expTable[i] = std::exp(std::complex<double>(0, -2 * M_PI * i / n));
 	}
 	else{ 
+		siP->transformType = 2;
+		siP->m = 1;
+		while (siP->m / 2 <= n) {
+			if (siP->m > SIZE_MAX / 2)
+				throw "Vector too large";
+			siP->m *= 2;
+		}
 
+		// Trignometric table
+		//std::vector<std::complex<double>> expTable(n);
+		for (size_t i = 0; i < n; i++) {
+			unsigned long long temp = static_cast<unsigned long long>(i) * i;
+			temp %= static_cast<unsigned long long>(n) * 2;
+			double angle = M_PI * temp / n;
+			// Less accurate alternative if long long is unavailable: double angle = M_PI * i * i / n;
+			//expTable[i] = std::exp(std::complex<double>(0, -angle));
+			siP->expTable.push_back( std::exp(std::complex<double>(0, -angle)) );
+		}
+
+		//vector<complex<double> > bv(m);
+		siP->bv.resize(siP->m);
+		siP->bv[0] = siP->expTable[0];
+		for (size_t i = 1; i < n; i++)
+			siP->bv[i] = siP->bv[siP->m - i] = std::conj(siP->expTable[i]);
+			//bv[i] = bv[m - i] = std::conj(expTable[i]);
 	}
 }

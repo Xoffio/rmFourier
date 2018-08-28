@@ -324,12 +324,14 @@ SmartRender(
 											ifftShift));
 
 										// IFFT the Rows
+										preTransform(infoP->inWidth, (void*)infoP);
 										ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
 											infoP->inHeight,//input_worldP->height,
 											(void*)infoP,
 											ifftRowsTh));
 
 										// IFFT the columns
+										preTransform(infoP->inHeight, (void*)infoP);
 										ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
 											infoP->inWidth, //input_worldP->width,
 											(void*)infoP,
@@ -342,18 +344,17 @@ SmartRender(
 											(void*)infoP,
 											pixelToVector));
 
-										ERR(suites.IterateSuite1()->AEGP_GetNumThreads(&infoP->nMaxThreads));
-
-										// Pre-Transform
-										preTransform(infoP->inWidth, infoP->levels, infoP->expTable);
+										//ERR(suites.IterateSuite1()->AEGP_GetNumThreads(&infoP->nMaxThreads));
 
 										// FFT the Rows
+										preTransform(infoP->inWidth, (void*)infoP);
 										ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
 											infoP->inHeight,//input_worldP->height,
 											(void*)infoP,
 											fftRowsTh));
 
 										// FFT the columns
+										preTransform(infoP->inHeight, (void*)infoP);
 										ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
 											infoP->inWidth, //input_worldP->width,
 											(void*)infoP,

@@ -31,21 +31,21 @@ namespace fft {
 	* Computes the discrete Fourier transform (DFT) of the given complex vector, storing the result back into the vector.
 	* The vector can have any length. This is a wrapper function.
 	*/
-	void transform(std::vector<std::complex<double> > &vec, int &levels, std::vector<std::complex<double> > &expTable);
+	void transform(std::vector<std::complex<double> > &vec, void *refcon);
 
 
 	/*
 	* Computes the inverse discrete Fourier transform (IDFT) of the given complex vector, storing the result back into the vector.
 	* The vector can have any length. This is a wrapper function. This transform does not perform scaling, so the inverse is not a true inverse.
 	*/
-	void inverseTransform(std::vector<std::complex<double> > &vec);
+	void inverseTransform(std::vector<std::complex<double> > &vec, void *refcon);
 
 
 	/*
 	* Computes the discrete Fourier transform (DFT) of the given complex vector, storing the result back into the vector.
 	* The vector's length must be a power of 2. Uses the Cooley-Tukey decimation-in-time radix-2 algorithm.
 	*/
-	void transformRadix2(std::vector<std::complex<double> > &vec, int &levels, std::vector<std::complex<double> > &expTable);
+	void transformRadix2(std::vector<std::complex<double> > &vec, void *refcon);
 
 
 	/*
@@ -53,7 +53,7 @@ namespace fft {
 	* The vector can have any length. This requires the convolution function, which in turn requires the radix-2 FFT function.
 	* Uses Bluestein's chirp z-transform algorithm.
 	*/
-	void transformBluestein(std::vector<std::complex<double> > &vec);
+	void transformBluestein(std::vector<std::complex<double> > &vec, void *refcon);
 
 
 	/*
@@ -62,6 +62,7 @@ namespace fft {
 	void convolve(
 		const std::vector<std::complex<double> > &vecx,
 		const std::vector<std::complex<double> > &vecy,
-		std::vector<std::complex<double> > &vecout);
+		std::vector<std::complex<double> > &vecout,
+		void *refcon);
 
 }
