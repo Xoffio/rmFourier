@@ -421,5 +421,18 @@ void preTransform(size_t vSize, void *refcon) {
 		for (size_t i = 1; i < n; i++)
 			siP->bv[i] = siP->bv[siP->m - i] = std::conj(siP->expTable[i]);
 			//bv[i] = bv[m - i] = std::conj(expTable[i]);
+
+		siP->preBluestein = false;
+
+		// ------------ Trignometric table of convolution ------------
+		siP->convLevels = 0;  // Compute levels = floor(log2(n))
+		for (size_t temp = siP->m; temp > 1U; temp >>= 1)
+			siP->convLevels++;
+		if (static_cast<size_t>(1U) << siP->convLevels != siP->m)
+			throw "Length is not a power of 2";
+
+		// Trignometric table
+		for (size_t i = 0; i < siP->m / 2; i++)
+			siP->convExpTable.push_back(std::exp(std::complex<double>(0, -2 * M_PI * i / siP->m)));
 	}
 }

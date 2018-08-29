@@ -27,7 +27,6 @@
 #include <cstddef>
 #include <cstdint>
 #include "FftComplex.hpp"
-#include "rmFourier.h"
 
 using std::complex;
 using std::size_t;
@@ -58,9 +57,18 @@ void fft::inverseTransform(vector<complex<double> > &vec, void *refcon) {
 		static_cast<complex<double>(*)(const complex<double> &)>(std::conj));
 }
 
+void fft::convInverseTransform(vector<complex<double> > &vec, void *refcon) {
+	std::transform(vec.cbegin(), vec.cend(), vec.begin(),
+		static_cast<complex<double>(*)(const complex<double> &)>(std::conj));
+	convTransformRadix2(vec, refcon);
+	std::transform(vec.cbegin(), vec.cend(), vec.begin(),
+		static_cast<complex<double>(*)(const complex<double> &)>(std::conj));
+}
+
 void fft::transformRadix2(vector<complex<double> > &vec, void *refcon) {
 	register rmFourierInfo	*siP = (rmFourierInfo*)refcon;
 	size_t n = vec.size();
+
 	// Length variables
 	/*size_t n = vec.size();
 	int levels = 0;  // Compute levels = floor(log2(n))
@@ -97,6 +105,32 @@ void fft::transformRadix2(vector<complex<double> > &vec, void *refcon) {
 	}
 }
 
+void fft::convTransformRadix2(vector<complex<double> > &vec, void *refcon) {
+	register rmFourierInfo	*siP = (rmFourierInfo*)refcon;
+	size_t n = vec.size();
+
+	// Bit-reversed addressing permutation
+	for (size_t i = 0; i < n; i++) {
+		size_t j = reverseBits(i, siP->convLevels);
+		if (j > i)
+			std::swap(vec[i], vec[j]);
+	}
+
+	// Cooley-Tukey decimation-in-time radix-2 FFT
+	for (size_t size = 2; size <= n; size *= 2) {
+		size_t halfsize = size / 2;
+		size_t tablestep = n / size;
+		for (size_t i = 0; i < n; i += size) {
+			for (size_t j = i, k = 0; j < i + halfsize; j++, k += tablestep) {
+				complex<double> temp = vec[j + halfsize] * siP->convExpTable[k];
+				vec[j + halfsize] = vec[j] - temp;
+				vec[j] += temp;
+			}
+		}
+		if (size == n)  // Prevent overflow in 'size *= 2'
+			break;
+	}
+}
 
 void fft::transformBluestein(vector<complex<double> > &vec, void *refcon) {
 	register rmFourierInfo	*siP = (rmFourierInfo*)refcon;
@@ -144,18 +178,24 @@ void fft::convolve(
 	const vector<complex<double> > &xvec,
 	const vector<complex<double> > &yvec,
 	vector<complex<double> > &outvec,
-	void *siP) {
+	void *refcon) {
+	register rmFourierInfo	*siP = (rmFourierInfo*)refcon;
 
 	size_t n = xvec.size();
 	if (n != yvec.size() || n != outvec.size())
 		throw "Mismatched lengths";
 	vector<complex<double> > xv = xvec;
 	vector<complex<double> > yv = yvec;
-	//transform(xv);
-	//transform(yv);
+
+	//transform(xv, siP);
+	//transform(yv, siP);
+	convTransformRadix2(xv, siP);
+	convTransformRadix2(yv, siP);
+	
 	for (size_t i = 0; i < n; i++)
 		xv[i] *= yv[i];
-	//inverseTransform(xv, levels, expTable);
+	//inverseTransform(xv, siP);
+	convInverseTransform(xv, siP);
 	for (size_t i = 0; i < n; i++)  // Scaling (because this FFT implementation omits it)
 		outvec[i] = xv[i] / static_cast<double>(n);
 }

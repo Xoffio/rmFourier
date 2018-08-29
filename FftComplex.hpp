@@ -25,6 +25,7 @@
 
 #include <complex>
 #include <vector>
+#include "rmFourier.h"
 
 namespace fft {
 	/*
@@ -64,5 +65,8 @@ namespace fft {
 		const std::vector<std::complex<double> > &vecy,
 		std::vector<std::complex<double> > &vecout,
 		void *refcon);
+
+	void convTransformRadix2(std::vector<std::complex<double>> &vec, void *refcon);
+	void convInverseTransform(std::vector<std::complex<double>> &vec, void *refcon);
 
 }

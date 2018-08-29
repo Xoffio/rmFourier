@@ -91,6 +91,7 @@ typedef struct {
 	A_long								nMaxThreads;
 	int tmpCount, tmpMax;
 
+	bool								preBluestein;
 	int									levels,
 										convLevels,
 										transformType;
