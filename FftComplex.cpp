@@ -60,7 +60,7 @@ void fft::inverseTransform(vector<complex<double> > &vec, void *refcon) {
 void fft::convInverseTransform(vector<complex<double> > &vec, void *refcon) {
 	std::transform(vec.cbegin(), vec.cend(), vec.begin(),
 		static_cast<complex<double>(*)(const complex<double> &)>(std::conj));
-	convTransformRadix2(vec, refcon);
+	tmp(vec, refcon);
 	std::transform(vec.cbegin(), vec.cend(), vec.begin(),
 		static_cast<complex<double>(*)(const complex<double> &)>(std::conj));
 }
@@ -96,6 +96,46 @@ void fft::transformRadix2(vector<complex<double> > &vec, void *refcon) {
 		for (size_t i = 0; i < n; i += size) {
 			for (size_t j = i, k = 0; j < i + halfsize; j++, k += tablestep) {
 				complex<double> temp = vec[j + halfsize] * siP->expTable[k];
+				vec[j + halfsize] = vec[j] - temp;
+				vec[j] += temp;
+			}
+		}
+		if (size == n)  // Prevent overflow in 'size *= 2'
+			break;
+	}
+}
+
+void fft::tmp(vector<complex<double> > &vec, void *refcon) {
+	register rmFourierInfo	*siP = (rmFourierInfo*)refcon;
+	//size_t n = vec.size();
+
+	// Length variables
+	size_t n = vec.size();
+	int levels = 0;  // Compute levels = floor(log2(n))
+	for (size_t temp = n; temp > 1U; temp >>= 1)
+	levels++;
+	if (static_cast<size_t>(1U) << levels != n)
+	throw "Length is not a power of 2";
+
+	// Trignometric table
+	vector<complex<double> > expTable(n / 2);
+	for (size_t i = 0; i < n / 2; i++)
+	expTable[i] = std::exp(complex<double>(0, -2 * M_PI * i / n));
+
+	// Bit-reversed addressing permutation
+	for (size_t i = 0; i < n; i++) {
+		size_t j = reverseBits(i, levels);
+		if (j > i)
+			std::swap(vec[i], vec[j]);
+	}
+
+	// Cooley-Tukey decimation-in-time radix-2 FFT
+	for (size_t size = 2; size <= n; size *= 2) {
+		size_t halfsize = size / 2;
+		size_t tablestep = n / size;
+		for (size_t i = 0; i < n; i += size) {
+			for (size_t j = i, k = 0; j < i + halfsize; j++, k += tablestep) {
+				complex<double> temp = vec[j + halfsize] * expTable[k];
 				vec[j + halfsize] = vec[j] - temp;
 				vec[j] += temp;
 			}
@@ -158,15 +198,16 @@ void fft::transformBluestein(vector<complex<double> > &vec, void *refcon) {
 	vector<complex<double> > av(siP->m);
 	for (size_t i = 0; i < n; i++)
 		av[i] = vec[i] * siP->expTable[i];
+		//av[i] = vec[i] * siP->expTable[i];
 
-	/*vector<complex<double> > bv(m);
-	bv[0] = expTable[0];
+	vector<complex<double> > bv(siP->m);
+	bv[0] = siP->expTable[0];
 	for (size_t i = 1; i < n; i++)
-		bv[i] = bv[m - i] = std::conj(expTable[i]);*/
+		bv[i] = bv[siP->m - i] = std::conj(siP->expTable[i]);
 
 	// Convolution
 	vector<complex<double> > cv(siP->m);
-	convolve(av, siP->bv, cv, siP);
+	convolve(av, bv, cv, siP);
 
 	// Postprocessing
 	for (size_t i = 0; i < n; i++)
@@ -189,8 +230,8 @@ void fft::convolve(
 
 	//transform(xv, siP);
 	//transform(yv, siP);
-	convTransformRadix2(xv, siP);
-	convTransformRadix2(yv, siP);
+	tmp(xv, siP);
+	tmp(yv, siP);
 	
 	for (size_t i = 0; i < n; i++)
 		xv[i] *= yv[i];
