@@ -382,16 +382,19 @@ void preTransform(size_t vSize, void *refcon) {
 	size_t n = vSize;//vec.size();
 
 	if ((n & (n - 1)) == 0) {  // If is power of 2
-		siP->transformType = 1;
-		siP->levels = 0;  // Compute levels = floor(log2(n))
-		for (size_t temp = n; temp > 1U; temp >>= 1)
-			siP->levels++;
-		if (static_cast<size_t>(1U) << siP->levels != n)
-			throw "Length is not a power of 2";
+		if (n != siP->expTable.size()) {
+			siP->expTable.clear();
+			siP->transformType = 1;
+			siP->levels = 0;  // Compute levels = floor(log2(n))
+			for (size_t temp = n; temp > 1U; temp >>= 1)
+				siP->levels++;
+			if (static_cast<size_t>(1U) << siP->levels != n)
+				throw "Length is not a power of 2";
 
-		// Trignometric table
-		for (size_t i = 0; i < n / 2; i++)
-			siP->expTable.push_back(std::exp(std::complex<double>(0, -2 * M_PI * i / n)));
+			// Trignometric table
+			for (size_t i = 0; i < n / 2; i++)
+				siP->expTable.push_back(std::exp(std::complex<double>(0, -2 * M_PI * i / n)));
+		}
 	}
 	else{ 
 		siP->transformType = 2;
