@@ -404,6 +404,8 @@ void preTransform(size_t vSize, void *refcon) {
 			siP->m *= 2;
 		}
 
+		siP->expTable.clear();
+
 		// Trignometric table
 		//std::vector<std::complex<double>> expTable(n);
 		for (size_t i = 0; i < n; i++) {

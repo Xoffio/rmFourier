@@ -106,7 +106,7 @@ void fft::transformRadix2(vector<complex<double> > &vec, void *refcon) {
 }
 
 void fft::tmp(vector<complex<double> > &vec, void *refcon) {
-	register rmFourierInfo	*siP = (rmFourierInfo*)refcon;
+	//register rmFourierInfo	*siP = (rmFourierInfo*)refcon;
 	//size_t n = vec.size();
 
 	// Length variables
@@ -196,18 +196,21 @@ void fft::transformBluestein(vector<complex<double> > &vec, void *refcon) {
 
 	// Temporary vectors and preprocessing
 	vector<complex<double> > av(siP->m);
-	for (size_t i = 0; i < n; i++)
+	for (size_t i = 0; i < n; i++) {
+		std::complex<double> tmp = siP->expTable[i];
 		av[i] = vec[i] * siP->expTable[i];
-		//av[i] = vec[i] * siP->expTable[i];
+	}
+		
+		//av[i] = vec[i] * expTable[i];
 
-	vector<complex<double> > bv(siP->m);
-	bv[0] = siP->expTable[0];
+	/*vector<complex<double> > bv(siP->m);
+	bv[0] = expTable[0];
 	for (size_t i = 1; i < n; i++)
-		bv[i] = bv[siP->m - i] = std::conj(siP->expTable[i]);
+		bv[i] = bv[siP->m - i] = std::conj(expTable[i]);*/
 
 	// Convolution
 	vector<complex<double> > cv(siP->m);
-	convolve(av, bv, cv, siP);
+	convolve(av, siP->bv, cv, siP);
 
 	// Postprocessing
 	for (size_t i = 0; i < n; i++)
