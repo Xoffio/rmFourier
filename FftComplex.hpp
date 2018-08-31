@@ -67,7 +67,5 @@ namespace fft {
 		void *refcon);
 
 	void convTransformRadix2(std::vector<std::complex<double>> &vec, void *refcon);
-	void convInverseTransform(std::vector<std::complex<double>> &vec, void *refcon);
-	void tmp(std::vector<std::complex<double> > &vec, void *refcon);
 
 }

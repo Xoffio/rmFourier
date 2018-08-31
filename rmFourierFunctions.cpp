@@ -390,10 +390,8 @@ void preTransform(size_t vSize, void *refcon) {
 			throw "Length is not a power of 2";
 
 		// Trignometric table
-		//std::vector<std::complex<double> > expTable(n / 2);
 		for (size_t i = 0; i < n / 2; i++)
 			siP->expTable.push_back(std::exp(std::complex<double>(0, -2 * M_PI * i / n)));
-		//expTable[i] = std::exp(std::complex<double>(0, -2 * M_PI * i / n));
 	}
 	else{ 
 		siP->transformType = 2;
@@ -407,22 +405,18 @@ void preTransform(size_t vSize, void *refcon) {
 		siP->expTable.clear();
 
 		// Trignometric table
-		//std::vector<std::complex<double>> expTable(n);
 		for (size_t i = 0; i < n; i++) {
 			unsigned long long temp = static_cast<unsigned long long>(i) * i;
 			temp %= static_cast<unsigned long long>(n) * 2;
 			double angle = M_PI * temp / n;
 			// Less accurate alternative if long long is unavailable: double angle = M_PI * i * i / n;
-			//expTable[i] = std::exp(std::complex<double>(0, -angle));
 			siP->expTable.push_back( std::exp(std::complex<double>(0, -angle)) );
 		}
 
-		//vector<complex<double> > bv(m);
 		siP->bv.resize(siP->m);
 		siP->bv[0] = siP->expTable[0];
 		for (size_t i = 1; i < n; i++)
 			siP->bv[i] = siP->bv[siP->m - i] = std::conj(siP->expTable[i]);
-			//bv[i] = bv[m - i] = std::conj(expTable[i]);
 
 		siP->preBluestein = false;
 
