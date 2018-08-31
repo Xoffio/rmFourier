@@ -427,6 +427,7 @@ void preTransform(size_t vSize, void *refcon) {
 		siP->preBluestein = false;
 
 		// ------------ Trignometric table of convolution ------------
+		siP->convExpTable.clear();
 		siP->convLevels = 0;  // Compute levels = floor(log2(n))
 		for (size_t temp = siP->m; temp > 1U; temp >>= 1)
 			siP->convLevels++;

@@ -196,12 +196,8 @@ void fft::transformBluestein(vector<complex<double> > &vec, void *refcon) {
 
 	// Temporary vectors and preprocessing
 	vector<complex<double> > av(siP->m);
-	for (size_t i = 0; i < n; i++) {
-		std::complex<double> tmp = siP->expTable[i];
+	for (size_t i = 0; i < n; i++)
 		av[i] = vec[i] * siP->expTable[i];
-	}
-		
-		//av[i] = vec[i] * expTable[i];
 
 	/*vector<complex<double> > bv(siP->m);
 	bv[0] = expTable[0];
@@ -233,8 +229,8 @@ void fft::convolve(
 
 	//transform(xv, siP);
 	//transform(yv, siP);
-	tmp(xv, siP);
-	tmp(yv, siP);
+	convTransformRadix2(xv, siP);
+	convTransformRadix2(yv, siP);
 	
 	for (size_t i = 0; i < n; i++)
 		xv[i] *= yv[i];
