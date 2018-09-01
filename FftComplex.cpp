@@ -55,9 +55,20 @@ void fft::inverseTransform(vector<complex<double> > &vec, void *refcon) {
 	std::transform(vec.cbegin(), vec.cend(), vec.begin(),
 		static_cast<complex<double>(*)(const complex<double> &)>(std::conj));
 
-	if (siP->transformType == 1) transform(vec, refcon);
-	if (siP->transformType == 2) convTransformRadix2(vec, refcon);
+	transform(vec, refcon);
 	
+	std::transform(vec.cbegin(), vec.cend(), vec.begin(),
+		static_cast<complex<double>(*)(const complex<double> &)>(std::conj));
+}
+
+void fft::convInverseTransform(vector<complex<double> > &vec, void *refcon) {
+	register rmFourierInfo	*siP = (rmFourierInfo*)refcon;
+
+	std::transform(vec.cbegin(), vec.cend(), vec.begin(),
+		static_cast<complex<double>(*)(const complex<double> &)>(std::conj));
+
+	convTransformRadix2(vec, refcon);
+
 	std::transform(vec.cbegin(), vec.cend(), vec.begin(),
 		static_cast<complex<double>(*)(const complex<double> &)>(std::conj));
 }
@@ -156,7 +167,7 @@ void fft::convolve(
 	for (size_t i = 0; i < n; i++)
 		xv[i] *= yv[i];
 
-	inverseTransform(xv, siP);
+	convInverseTransform(xv, siP);
 	for (size_t i = 0; i < n; i++)  // Scaling (because this FFT implementation omits it)
 		outvec[i] = xv[i] / static_cast<double>(n);
 }

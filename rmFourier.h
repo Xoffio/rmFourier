@@ -73,7 +73,7 @@ enum {
 typedef struct {
 	PF_ProgPtr							ref;
 	PF_SampPB							samp_pb;
-	PF_InData							in_data;
+	PF_InData							in_data, *inD;
 	PF_Boolean							no_opB;
 	PF_EffectWorld						*output_worldP,
 										*input_worldP,
@@ -99,6 +99,8 @@ typedef struct {
 	std::vector<std::complex<double>>	expTable, 
 										convExpTable,
 										bv;
+	A_long								currentProcess,
+										totalProcess;
 } rmFourierInfo;
 
 
@@ -113,8 +115,6 @@ extern "C" {
 		PF_LayerDef		*output,
 		void			*extra) ;
 }
-
-bool checkWorldSizes(PF_EffectWorld *in, PF_EffectWorld *out);
 
 static PF_PixelFloat
 *getXY32(PF_EffectWorld &def, int x, int y);

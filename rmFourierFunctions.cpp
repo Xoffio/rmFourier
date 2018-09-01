@@ -1,13 +1,5 @@
 #include "rmFourier.h"
 
-bool checkWorldSizes(PF_EffectWorld *in, PF_EffectWorld *out) {
-	bool same = false;
-
-	if ((in->width == out->width) && (in->height == out->height)) same = true;
-
-	return (same);
-}
-
 static PF_PixelFloat
 *getXY32(PF_EffectWorld &def, int x, int y) {
 	return (PF_PixelFloat*)((char*)def.data +

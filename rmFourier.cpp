@@ -285,6 +285,7 @@ SmartRender(
 				infoP->ref = in_data->effect_ref;
 				infoP->samp_pb.src = input_worldP;
 				infoP->in_data = *in_data;
+				infoP->inD = in_data;
 				infoP->input_worldP = input_worldP;
 				infoP->output_worldP = output_worldP;
 
@@ -298,6 +299,10 @@ SmartRender(
 
 				if (letsRender){
 					if (!err) {
+
+						A_long	currentProcess = 0, 
+								totalProcess=7;
+
 						switch (format) {
 
 							case PF_PixelFormat_ARGB128: {
