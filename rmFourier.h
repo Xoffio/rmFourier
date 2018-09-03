@@ -202,10 +202,11 @@ tmpRender8(
 
 PF_Err
 pixelToVector(
-	void *refcon,
-	A_long threadNum,
-	A_long iterationCount,
-	A_long numOfIterations);
+	void			*refcon,
+	A_long 			xL,
+	A_long 			yL,
+	PF_PixelFloat 	*inP,
+	PF_PixelFloat 	*outP);
 
 void preTransform(size_t vSize, void *refcon);
 

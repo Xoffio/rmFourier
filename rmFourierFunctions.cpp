@@ -96,25 +96,19 @@ ifftShift(
 
 PF_Err
 pixelToVector(
-	void *refcon,
-	A_long threadNum,
-	A_long iterationCount,
-	A_long numOfIterations)
+	void			*refcon,
+	A_long 			xL,
+	A_long 			yL,
+	PF_PixelFloat 	*inP,
+	PF_PixelFloat 	*outP)
 {
 	PF_Err err = PF_Err_NONE;
 	register rmFourierInfo	*siP = (rmFourierInfo*)refcon;
 
-	AEGP_SuiteHandler suites(siP->in_data.pica_basicP);
-
-	for (A_long xL = 0; xL < siP->inWidth; xL++) {
-		A_long currentIndex = (iterationCount * siP->inWidth) + xL;
-		PF_PixelFloat *pixelPointerAt = NULL;
-
-		pixelPointerAt = (PF_PixelFloat*)((char*)siP->input_worldP->data + (currentIndex * sizeof(PF_PixelFloat)));
-		siP->imgVectorR[currentIndex].real(pixelPointerAt->red);
-		siP->imgVectorG[currentIndex].real(pixelPointerAt->green);
-		siP->imgVectorB[currentIndex].real(pixelPointerAt->blue);
-	}
+	A_long currentIndex = (yL * siP->inWidth) + xL;
+	siP->imgVectorR[currentIndex].real(inP->red);
+	siP->imgVectorG[currentIndex].real(inP->green);
+	siP->imgVectorB[currentIndex].real(inP->blue);
 
 	return err;
 }
@@ -389,42 +383,44 @@ void preTransform(size_t vSize, void *refcon) {
 		}
 	}
 	else{ 
-		siP->transformType = 2;
-		siP->m = 1;
-		while (siP->m / 2 <= n) {
-			if (siP->m > SIZE_MAX / 2)
-				throw "Vector too large";
-			siP->m *= 2;
+		if (n != siP->expTable.size()) {
+			siP->transformType = 2;
+			siP->m = 1;
+			while (siP->m / 2 <= n) {
+				if (siP->m > SIZE_MAX / 2)
+					throw "Vector too large";
+				siP->m *= 2;
+			}
+
+			siP->expTable.clear();
+
+			// Trignometric table
+			for (size_t i = 0; i < n; i++) {
+				unsigned long long temp = static_cast<unsigned long long>(i) * i;
+				temp %= static_cast<unsigned long long>(n) * 2;
+				double angle = M_PI * temp / n;
+				// Less accurate alternative if long long is unavailable: double angle = M_PI * i * i / n;
+				siP->expTable.push_back(std::exp(std::complex<double>(0, -angle)));
+			}
+
+			siP->bv.resize(siP->m);
+			siP->bv[0] = siP->expTable[0];
+			for (size_t i = 1; i < n; i++)
+				siP->bv[i] = siP->bv[siP->m - i] = std::conj(siP->expTable[i]);
+
+			siP->preBluestein = false;
+
+			// ------------ Trignometric table of convolution ------------
+			siP->convExpTable.clear();
+			siP->convLevels = 0;  // Compute levels = floor(log2(n))
+			for (size_t temp = siP->m; temp > 1U; temp >>= 1)
+				siP->convLevels++;
+			if (static_cast<size_t>(1U) << siP->convLevels != siP->m)
+				throw "Length is not a power of 2";
+
+			// Trignometric table
+			for (size_t i = 0; i < siP->m / 2; i++)
+				siP->convExpTable.push_back(std::exp(std::complex<double>(0, -2 * M_PI * i / siP->m)));
 		}
-
-		siP->expTable.clear();
-
-		// Trignometric table
-		for (size_t i = 0; i < n; i++) {
-			unsigned long long temp = static_cast<unsigned long long>(i) * i;
-			temp %= static_cast<unsigned long long>(n) * 2;
-			double angle = M_PI * temp / n;
-			// Less accurate alternative if long long is unavailable: double angle = M_PI * i * i / n;
-			siP->expTable.push_back( std::exp(std::complex<double>(0, -angle)) );
-		}
-
-		siP->bv.resize(siP->m);
-		siP->bv[0] = siP->expTable[0];
-		for (size_t i = 1; i < n; i++)
-			siP->bv[i] = siP->bv[siP->m - i] = std::conj(siP->expTable[i]);
-
-		siP->preBluestein = false;
-
-		// ------------ Trignometric table of convolution ------------
-		siP->convExpTable.clear();
-		siP->convLevels = 0;  // Compute levels = floor(log2(n))
-		for (size_t temp = siP->m; temp > 1U; temp >>= 1)
-			siP->convLevels++;
-		if (static_cast<size_t>(1U) << siP->convLevels != siP->m)
-			throw "Length is not a power of 2";
-
-		// Trignometric table
-		for (size_t i = 0; i < siP->m / 2; i++)
-			siP->convExpTable.push_back(std::exp(std::complex<double>(0, -2 * M_PI * i / siP->m)));
 	}
 }

@@ -302,6 +302,9 @@ SmartRender(
 
 						A_long	currentProcess = 0, 
 								totalProcess=7;
+						infoP->currentProcess = 0;
+						infoP->expTable.clear();
+						infoP->convExpTable.clear();
 
 						switch (format) {
 
@@ -344,10 +347,16 @@ SmartRender(
 									}
 									else {
 										// Make a vector from the image pixels.
-										ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
-											infoP->inHeight,//input_worldP->height,
-											(void*)infoP,
-											pixelToVector));
+										ERR(suites.IterateFloatSuite1()->iterate(
+											in_data,
+											0,							// progress base
+											infoP->inHeight,			// progress final
+											input_worldP,				// src
+											NULL,						// area - null for all pixels
+											(void*)infoP,				// custom data pointer
+											pixelToVector,				// pixel function pointer
+											output_worldP
+										));
 
 										//ERR(suites.IterateSuite1()->AEGP_GetNumThreads(&infoP->nMaxThreads));
 
