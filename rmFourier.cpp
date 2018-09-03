@@ -346,17 +346,15 @@ SmartRender(
 											ifftColumnsTh));
 									}
 									else {
+										ERR(PF_PROGRESS(in_data, 1, 100));
+
 										// Make a vector from the image pixels.
-										ERR(suites.IterateFloatSuite1()->iterate(
-											in_data,
-											0,							// progress base
-											infoP->inHeight,			// progress final
-											input_worldP,				// src
-											NULL,						// area - null for all pixels
-											(void*)infoP,				// custom data pointer
-											pixelToVector,				// pixel function pointer
-											output_worldP
-										));
+										ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
+											infoP->inHeight,//input_worldP->height,
+											(void*)infoP,
+											pixelToVector));
+
+										ERR(PF_PROGRESS(in_data, 20, 100));
 
 										//ERR(suites.IterateSuite1()->AEGP_GetNumThreads(&infoP->nMaxThreads));
 
@@ -367,12 +365,16 @@ SmartRender(
 											(void*)infoP,
 											fftRowsTh));
 
+										ERR(PF_PROGRESS(in_data, 40, 100));
+
 										// FFT the columns
 										preTransform(infoP->inHeight, (void*)infoP);
 										ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
 											infoP->inWidth, //input_worldP->width,
 											(void*)infoP,
 											fftColumnsTh));
+
+										ERR(PF_PROGRESS(in_data, 60, 100));
 									}
 
 									// Put the values in the vector back to the image, also get the max in order to normalize later

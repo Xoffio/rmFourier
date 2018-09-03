@@ -96,19 +96,31 @@ ifftShift(
 
 PF_Err
 pixelToVector(
-	void			*refcon,
-	A_long 			xL,
-	A_long 			yL,
-	PF_PixelFloat 	*inP,
-	PF_PixelFloat 	*outP)
+	void *refcon,
+	A_long threadNum,
+	A_long iterationCount,
+	A_long numOfIterations)
 {
 	PF_Err err = PF_Err_NONE;
 	register rmFourierInfo	*siP = (rmFourierInfo*)refcon;
 
-	A_long currentIndex = (yL * siP->inWidth) + xL;
-	siP->imgVectorR[currentIndex].real(inP->red);
-	siP->imgVectorG[currentIndex].real(inP->green);
-	siP->imgVectorB[currentIndex].real(inP->blue);
+	AEGP_SuiteHandler suites(siP->in_data.pica_basicP);
+
+	for (A_long xL = 0; xL < siP->inWidth; xL++) {
+		A_long currentIndex = (iterationCount * siP->inWidth) + xL;
+		PF_PixelFloat *pixelPointerAt = NULL;
+
+		pixelPointerAt = (PF_PixelFloat*)((char*)siP->input_worldP->data + (currentIndex * sizeof(PF_PixelFloat)));
+		siP->imgVectorR[currentIndex].real(pixelPointerAt->red);
+		siP->imgVectorG[currentIndex].real(pixelPointerAt->green);
+		siP->imgVectorB[currentIndex].real(pixelPointerAt->blue);
+	}
+
+	/*siP->currentProcess += 1;
+	if (siP->currentProcess >= numOfIterations) {
+		siP->currentProcess = 0;
+		ERR(PF_PROGRESS(&siP->in_data, 1, 10));
+	}*/
 
 	return err;
 }
