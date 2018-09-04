@@ -294,8 +294,18 @@ SmartRender(
 
 				ERR(wsP->PF_GetPixelFormat(input_worldP, &format));
 
-				if (infoP->inverseCB)
+				if (infoP->inverseCB) {
 					if (!phase_worldP) letsRender = false;
+					else {
+						if (!((phase_worldP->width == input_worldP->width) && (phase_worldP->height == input_worldP->height))) {
+							letsRender = false;
+
+							auto ansiSuite = AEFX_SuiteScoper<PF_ANSICallbacksSuite1>(in_data, kPFANSISuite, kPFANSISuiteVersion1);
+							ansiSuite->sprintf(out_data->return_msg, "The phase layer have to be the same size as the input layer.");
+						}
+					}
+				}
+					
 
 				if (letsRender){
 					if (!err) {
