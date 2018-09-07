@@ -83,7 +83,7 @@ typedef struct {
 	bool								inverseCB,
 										fftPhase;
 	
-	std::vector<std::complex<double>>	imgVectorR, imgVectorG, imgVectorB,
+	std::vector<std::complex<double> >	imgVectorR, imgVectorG, imgVectorB,
 										phaseVectorR, phaseVectorG, phaseVectorB;
 	double								rMax, gMax, bMax;
 	A_long								inWidth, inHeight,
@@ -96,7 +96,7 @@ typedef struct {
 										convLevels,
 										transformType;
 	size_t								m;
-	std::vector<std::complex<double>>	expTable, 
+	std::vector<std::complex<double> >	expTable,
 										convExpTable,
 										bv;
 	A_long								currentProcess,

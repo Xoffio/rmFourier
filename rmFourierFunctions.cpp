@@ -192,7 +192,7 @@ fftRowsTh(
 	siP->tmpCount = siP->tmpCount + 1;
 	if (threadNum > siP->tmpMax) siP->tmpMax = threadNum;
 
-	std::vector<std::complex<double>> currentRowVecR, currentRowVecG, currentRowVecB;
+	std::vector<std::complex<double> > currentRowVecR, currentRowVecG, currentRowVecB;
 
 	for (A_long i = 0; i < siP->inWidth; i++) {
 		A_long currentIndex = (siP->inWidth*iterationCount) + i;
@@ -227,7 +227,7 @@ fftColumnsTh(
 
 	AEGP_SuiteHandler suites(siP->in_data.pica_basicP);
 
-	std::vector<std::complex<double>> currentColVecR, currentColVecG, currentColVecB;
+	std::vector<std::complex<double> > currentColVecR, currentColVecG, currentColVecB;
 
 	for (A_long i = 0; i < siP->inHeight; i++) {
 		A_long currentIndex = (siP->inWidth*i) + iterationCount;
@@ -265,7 +265,7 @@ ifftRowsTh(
 	siP->tmpCount = siP->tmpCount + 1;
 	if (threadNum > siP->tmpMax) siP->tmpMax = threadNum;
 
-	std::vector<std::complex<double>> currentRowVecR, currentRowVecG, currentRowVecB;
+	std::vector<std::complex<double> > currentRowVecR, currentRowVecG, currentRowVecB;
 
 	for (A_long i = 0; i < siP->inWidth; i++) {
 		A_long currentIndex = (siP->inWidth*iterationCount) + i;
@@ -313,7 +313,7 @@ ifftColumnsTh(
 
 	AEGP_SuiteHandler suites(siP->in_data.pica_basicP);
 
-	std::vector<std::complex<double>> currentColVecR, currentColVecG, currentColVecB;
+	std::vector<std::complex<double> > currentColVecR, currentColVecG, currentColVecB;
 
 	for (A_long i = 0; i < siP->inHeight; i++) {
 		A_long currentIndex = (siP->inWidth*i) + iterationCount;
@@ -373,7 +373,7 @@ tmpRender8(
 }
 
 void preTransform(size_t vSize, void *refcon) {
-	const double M_PI = 3.14159265358979323846;
+	//const double M_PI = 3.14159265358979323846;
 	register rmFourierInfo	*siP = (rmFourierInfo*)refcon;
 
 	// Length variables
