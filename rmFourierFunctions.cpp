@@ -373,7 +373,7 @@ tmpRender8(
 }
 
 void preTransform(size_t vSize, void *refcon) {
-	//const double M_PI = 3.14159265358979323846;
+	const double M_PI = 3.14159265358979323846;
 	register rmFourierInfo	*siP = (rmFourierInfo*)refcon;
 
 	// Length variables
