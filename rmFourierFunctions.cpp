@@ -111,9 +111,17 @@ pixelToVector(
 		PF_PixelFloat *pixelPointerAt = NULL;
 
 		pixelPointerAt = (PF_PixelFloat*)((char*)siP->input_worldP->data + (currentIndex * sizeof(PF_PixelFloat)));
-		siP->imgVectorR[currentIndex].real(pixelPointerAt->red);
-		siP->imgVectorG[currentIndex].real(pixelPointerAt->green);
-		siP->imgVectorB[currentIndex].real(pixelPointerAt->blue);
+
+		if (siP->colorComputations[3]) {
+			float grayPixel = (pixelPointerAt->red + pixelPointerAt->green + pixelPointerAt->blue) / 3;
+			siP->imgVectorGS[currentIndex].real(grayPixel);
+		}
+		else {
+			if (siP->colorComputations[0]) siP->imgVectorR[currentIndex].real(pixelPointerAt->red);
+			if (siP->colorComputations[1]) siP->imgVectorG[currentIndex].real(pixelPointerAt->green);
+			if (siP->colorComputations[2]) siP->imgVectorB[currentIndex].real(pixelPointerAt->blue);
+		}
+		
 	}
 
 	/*siP->currentProcess += 1;
@@ -140,22 +148,50 @@ vectorToPixel(
 
 	A_long currentIndex = (yL * siP->inWidth) + xL;
 
-	PF_FpShort finalR, finalG, finalB;
+	PF_FpShort finalR, finalG, finalB, finalGS;
 
 	if (!siP->inverseCB) {
 		if (!siP->fftPhase) {
-			finalR = log(1 + abs(siP->imgVectorR[currentIndex]));
-			finalG = log(1 + abs(siP->imgVectorG[currentIndex]));
-			finalB = log(1 + abs(siP->imgVectorB[currentIndex]));
+
+			if (siP->colorComputations[3]) {
+				finalGS = log(1 + abs(siP->imgVectorGS[currentIndex]));
+				finalR = finalGS;
+				finalG = finalGS;
+				finalB = finalGS;
+			}
+			else {
+				if (siP->colorComputations[0]) finalR = log(1 + abs(siP->imgVectorR[currentIndex]));
+				else finalR = 0;
+
+				if (siP->colorComputations[1]) finalG = log(1 + abs(siP->imgVectorG[currentIndex]));
+				else finalG = 0;
+
+				if (siP->colorComputations[2]) finalB = log(1 + abs(siP->imgVectorB[currentIndex]));
+				else finalB = 0;
+			}
 
 			if (finalR > siP->rMax) siP->rMax = finalR;
 			if (finalR > siP->gMax) siP->gMax = finalG;
 			if (finalR > siP->bMax) siP->bMax = finalB;
 		}
 		else {
-			finalR = atan2(siP->imgVectorR[currentIndex].imag(), siP->imgVectorR[currentIndex].real());
-			finalG = atan2(siP->imgVectorG[currentIndex].imag(), siP->imgVectorG[currentIndex].real());
-			finalB = atan2(siP->imgVectorB[currentIndex].imag(), siP->imgVectorB[currentIndex].real());
+			if (siP->colorComputations[3]) {
+				finalGS = atan2(siP->imgVectorGS[currentIndex].imag(), siP->imgVectorGS[currentIndex].real());
+				finalR = finalGS;
+				finalG = finalGS;
+				finalB = finalGS;
+			}
+			else {
+				if (siP->colorComputations[0]) finalR = atan2(siP->imgVectorR[currentIndex].imag(), siP->imgVectorR[currentIndex].real());
+				else finalR = 0;
+
+				if (siP->colorComputations[1]) finalG = atan2(siP->imgVectorG[currentIndex].imag(), siP->imgVectorG[currentIndex].real());
+				else finalG = 0;
+
+				if (siP->colorComputations[2]) finalB = atan2(siP->imgVectorB[currentIndex].imag(), siP->imgVectorB[currentIndex].real());
+				else finalB = 0;
+			}
+			
 		}
 		
 	}
@@ -169,7 +205,7 @@ vectorToPixel(
 		if (finalR > siP->bMax) siP->bMax = finalB;
 	}
 
-	outP->alpha = 1;
+	outP->alpha = inP->alpha;
 	outP->red = finalR;
 	outP->green = finalG;
 	outP->blue = finalB;
@@ -192,24 +228,35 @@ fftRowsTh(
 	siP->tmpCount = siP->tmpCount + 1;
 	if (threadNum > siP->tmpMax) siP->tmpMax = threadNum;
 
-	std::vector<std::complex<double> > currentRowVecR, currentRowVecG, currentRowVecB;
+	std::vector<std::complex<double> > currentRowVecR, currentRowVecG, currentRowVecB, currentRowVecGS;
 
 	for (A_long i = 0; i < siP->inWidth; i++) {
 		A_long currentIndex = (siP->inWidth*iterationCount) + i;
-		currentRowVecR.push_back(siP->imgVectorR[currentIndex]);
-		currentRowVecG.push_back(siP->imgVectorG[currentIndex]);
-		currentRowVecB.push_back(siP->imgVectorB[currentIndex]);
+
+		if (siP->colorComputations[3]) currentRowVecGS.push_back(siP->imgVectorGS[currentIndex]);
+		else {
+			if (siP->colorComputations[0]) currentRowVecR.push_back(siP->imgVectorR[currentIndex]);
+			if (siP->colorComputations[1]) currentRowVecG.push_back(siP->imgVectorG[currentIndex]);
+			if (siP->colorComputations[2]) currentRowVecB.push_back(siP->imgVectorB[currentIndex]);
+		}
 	}
 
-	fft::transform(currentRowVecR, siP);
-	fft::transform(currentRowVecG, siP);
-	fft::transform(currentRowVecB, siP);
+	if (siP->colorComputations[3]) fft::transform(currentRowVecGS, siP);
+	else {
+		if (siP->colorComputations[0]) fft::transform(currentRowVecR, siP);
+		if (siP->colorComputations[1]) fft::transform(currentRowVecG, siP);
+		if (siP->colorComputations[2]) fft::transform(currentRowVecB, siP);
+	}
 
 	for (A_long i = 0; i < siP->inWidth; i++) {
 		A_long currentIndex = (siP->inWidth*iterationCount) + i;
-		siP->imgVectorR.operator[](currentIndex) = currentRowVecR[i];
-		siP->imgVectorG.operator[](currentIndex) = currentRowVecG[i];
-		siP->imgVectorB.operator[](currentIndex) = currentRowVecB[i];
+
+		if (siP->colorComputations[3]) siP->imgVectorGS.operator[](currentIndex) = currentRowVecGS[i];
+		else {
+			if (siP->colorComputations[0]) siP->imgVectorR.operator[](currentIndex) = currentRowVecR[i];
+			if (siP->colorComputations[1]) siP->imgVectorG.operator[](currentIndex) = currentRowVecG[i];
+			if (siP->colorComputations[2]) siP->imgVectorB.operator[](currentIndex) = currentRowVecB[i];
+		}
 	}
 
 	return err;
@@ -227,24 +274,35 @@ fftColumnsTh(
 
 	AEGP_SuiteHandler suites(siP->in_data.pica_basicP);
 
-	std::vector<std::complex<double> > currentColVecR, currentColVecG, currentColVecB;
+	std::vector<std::complex<double> > currentColVecR, currentColVecG, currentColVecB, currentColVecGS;
 
 	for (A_long i = 0; i < siP->inHeight; i++) {
 		A_long currentIndex = (siP->inWidth*i) + iterationCount;
-		currentColVecR.push_back(siP->imgVectorR[currentIndex]);
-		currentColVecG.push_back(siP->imgVectorG[currentIndex]);
-		currentColVecB.push_back(siP->imgVectorB[currentIndex]);
+
+		if (siP->colorComputations[3]) currentColVecGS.push_back(siP->imgVectorGS[currentIndex]);
+		else {
+			if (siP->colorComputations[0]) currentColVecR.push_back(siP->imgVectorR[currentIndex]);
+			if (siP->colorComputations[1]) currentColVecG.push_back(siP->imgVectorG[currentIndex]);
+			if (siP->colorComputations[2]) currentColVecB.push_back(siP->imgVectorB[currentIndex]);
+		}
 	}
 
-	fft::transform(currentColVecR, siP);
-	fft::transform(currentColVecG, siP);
-	fft::transform(currentColVecB, siP);
+	if (siP->colorComputations[3]) fft::transform(currentColVecGS, siP);
+	else {
+		if (siP->colorComputations[0]) fft::transform(currentColVecR, siP);
+		if (siP->colorComputations[1]) fft::transform(currentColVecG, siP);
+		if (siP->colorComputations[2]) fft::transform(currentColVecB, siP);
+	}
 
 	for (A_long i = 0; i < siP->inHeight; i++) {
 		A_long currentIndex = (siP->inWidth*i) + iterationCount;
-		siP->imgVectorR.operator[](currentIndex) = currentColVecR[i];
-		siP->imgVectorG.operator[](currentIndex) = currentColVecG[i];
-		siP->imgVectorB.operator[](currentIndex) = currentColVecB[i];
+
+		if (siP->colorComputations[3]) siP->imgVectorGS.operator[](currentIndex) = currentColVecGS[i];
+		else {
+			if (siP->colorComputations[0]) siP->imgVectorR.operator[](currentIndex) = currentColVecR[i];
+			if (siP->colorComputations[1]) siP->imgVectorG.operator[](currentIndex) = currentColVecG[i];
+			if (siP->colorComputations[2]) siP->imgVectorB.operator[](currentIndex) = currentColVecB[i];
+		}
 	}
 
 	return err;

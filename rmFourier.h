@@ -60,6 +60,7 @@ enum {
 	RMFOURIER_PHASE_LAYER,
 	RMFOURIER_INVERSE_FFT,
 	RMFOURIER_FFT_PHASE,
+	RMFOURIER_COLOR_MODE,
 	RMFOURIER_NUM_PARAMS
 };
 
@@ -67,7 +68,8 @@ enum {
 enum {
 	PHASE_LAYER_DISK_ID = 1,
 	INVERSE_FFT_DISK_ID,
-	FFT_PHASE_DISK_ID
+	FFT_PHASE_DISK_ID,
+	COLOR_MODE_DISK_ID
 };
 
 typedef struct {
@@ -82,9 +84,10 @@ typedef struct {
 
 	bool								inverseCB,
 										fftPhase;
+	bool								colorComputations[4] = {false}; // R, G, B, GS
 	
-	std::vector<std::complex<double> >	imgVectorR, imgVectorG, imgVectorB,
-										phaseVectorR, phaseVectorG, phaseVectorB;
+	std::vector<std::complex<double> >	imgVectorR, imgVectorG, imgVectorB, imgVectorGS,
+										phaseVectorR, phaseVectorG, phaseVectorB, phaseVectorGS;
 	double								rMax, gMax, bMax;
 	A_long								inWidth, inHeight,
 										outWidth, outHeight;

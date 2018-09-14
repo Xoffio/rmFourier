@@ -62,6 +62,14 @@ ParamsSetup (
 	AEFX_CLR_STRUCT(def);
 	def.flags = PF_ParamFlag_SUPERVISE | PF_ParamFlag_CANNOT_TIME_VARY;
 	PF_ADD_CHECKBOX("Phase", "Get the phase from the Fourier transform", FALSE, 0, FFT_PHASE_DISK_ID);
+
+	AEFX_CLR_STRUCT(def);
+	def.flags = PF_ParamFlag_CANNOT_TIME_VARY;
+	PF_ADD_POPUP("Mode to compute",
+		5,
+		1,
+		"RGB | Red | Green | Blue | Grayscale",
+		COLOR_MODE_DISK_ID);
 	
 	out_data->num_params = RMFOURIER_NUM_PARAMS;
 
@@ -142,7 +150,7 @@ PreRender(
 	PF_PreRenderExtra	*extra)
 {
 	PF_Err err = PF_Err_NONE;
-	PF_ParamDef inverseFftParam, phaseParam;
+	PF_ParamDef inverseFftParam, phaseParam, colorMode;
 	PF_RenderRequest req = extra->input->output_request;
 	PF_CheckoutResult in_result, phase_result;
 
@@ -178,6 +186,16 @@ PreRender(
 				&phaseParam
 			));
 
+			AEFX_CLR_STRUCT(colorMode);
+			ERR(PF_CHECKOUT_PARAM(
+				in_data,
+				RMFOURIER_COLOR_MODE,
+				in_data->current_time,
+				in_data->time_step,
+				in_data->time_scale,
+				&colorMode
+			));
+
 			if (!err) {
 				req.preserve_rgb_of_zero_alpha = FALSE;	
 				req.field = PF_Field_FRAME;				
@@ -206,6 +224,20 @@ PreRender(
 					// Here you get the input values
 					infoP->inverseCB 	= inverseFftParam.u.bd.value;
 					infoP->fftPhase = phaseParam.u.bd.value;
+
+					if (colorMode.u.pd.value == 5) infoP->colorComputations[3] = true; // Grayscale
+					else {
+						if (colorMode.u.pd.value == 1) { // RGB
+							infoP->colorComputations[0] = true; // R
+							infoP->colorComputations[1] = true; // G
+							infoP->colorComputations[2] = true; // B
+						}
+						else {
+							if (colorMode.u.pd.value == 2) infoP->colorComputations[0] = true; // R
+							if (colorMode.u.pd.value == 3) infoP->colorComputations[1] = true; // G
+							if (colorMode.u.pd.value == 4) infoP->colorComputations[2] = true; // B
+						}
+					}
 
 					UnionLRect(&in_result.result_rect, &extra->output->result_rect);
 					UnionLRect(&in_result.max_result_rect, &extra->output->max_result_rect);
@@ -310,27 +342,28 @@ SmartRender(
 				if (letsRender){
 					if (!err) {
 
-						A_long	currentProcess = 0, 
-								totalProcess=7;
 						infoP->currentProcess = 0;
 						infoP->expTable.clear();
 						infoP->convExpTable.clear();
+
+						infoP->inWidth = input_worldP->width; //in_data->width;
+						infoP->inHeight = input_worldP->height;//in_data->height;
+						infoP->outWidth = out_data->width;
+						infoP->outHeight = out_data->height;
+
+						A_long imgSize = infoP->inWidth * infoP->inHeight;
+
+						// Initialize the vectors
+						infoP->imgVectorR.resize(imgSize);
+						infoP->imgVectorG.resize(imgSize);
+						infoP->imgVectorB.resize(imgSize);
+						infoP->imgVectorGS.resize(imgSize);
 
 						switch (format) {
 
 							case PF_PixelFormat_ARGB128: {
 								if (input_worldP->data && output_worldP->data) {
-									infoP->inWidth	= input_worldP->width; //in_data->width;
-									infoP->inHeight	= input_worldP->height;//in_data->height;
-									infoP->outWidth = out_data->width;
-									infoP->outHeight = out_data->height;
-
-									A_long imgSize = infoP->inWidth * infoP->inHeight;
-
-									// Initialize the vectors
-									infoP->imgVectorR.resize(imgSize);
-									infoP->imgVectorG.resize(imgSize);
-									infoP->imgVectorB.resize(imgSize);
+									ERR(PF_PROGRESS(in_data, 1, 100));
 
 									if (infoP->inverseCB) {
 										infoP->tmp_worldP = phase_worldP;
@@ -356,7 +389,6 @@ SmartRender(
 											ifftColumnsTh));
 									}
 									else {
-										ERR(PF_PROGRESS(in_data, 1, 100));
 
 										// Make a vector from the image pixels.
 										ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
