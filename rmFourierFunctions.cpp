@@ -21,9 +21,9 @@ normalizeImg(
 
 	AEGP_SuiteHandler suites(siP->in_data.pica_basicP);
 
-	outP->red = inP->red / siP->rMax;
-	outP->green = inP->green / siP->rMax;
-	outP->blue = inP->blue / siP->rMax;
+	if (!(siP->rMax == 0)) outP->red = inP->red / siP->rMax;
+	if (!(siP->gMax == 0)) outP->green = inP->green / siP->gMax;
+	if (!(siP->bMax == 0)) outP->blue = inP->blue / siP->bMax;
 
 	return err;
 }
