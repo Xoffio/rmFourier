@@ -81,6 +81,7 @@ typedef struct {
 										*input_worldP,
 										*tmp_worldP,
 										*copy_worldP;
+	PF_PixelFormat						format;
 
 	bool								inverseCB,
 										fftPhase;
@@ -138,12 +139,27 @@ pixelToVector(
 	A_long numOfIterations);
 
 PF_Err
+pixelToVector8(
+	void *refcon,
+	A_long threadNum,
+	A_long iterationCount,
+	A_long numOfIterations);
+
+PF_Err
 vectorToPixel(
 	void			*refcon,
 	A_long 			xL,
 	A_long 			yL,
 	PF_PixelFloat 	*inP,
 	PF_PixelFloat 	*outP);
+
+PF_Err
+vectorToPixel8(
+	void			*refcon,
+	A_long 			xL,
+	A_long 			yL,
+	PF_Pixel8	 	*inP,
+	PF_Pixel8	 	*outP);
 
 PF_Err
 fftRowsTh(
@@ -175,6 +191,13 @@ ifftColumnsTh(
 
 PF_Err
 fftShift(
+	void *refcon,
+	A_long threadNum,
+	A_long yL,
+	A_long numOfIterations);
+
+PF_Err
+fftShift8(
 	void *refcon,
 	A_long threadNum,
 	A_long yL,
