@@ -227,6 +227,29 @@ vectorToPixel(
 }
 
 PF_Err
+vectorToPixelTmp(
+	void			*refcon,
+	A_long 			xL,
+	A_long 			yL,
+	PF_PixelFloat 	*inP,
+	PF_PixelFloat 	*outP)
+{
+	register rmFourierInfo	*siP = (rmFourierInfo*)refcon;
+	PF_Err				err = PF_Err_NONE;
+
+	AEGP_SuiteHandler suites(siP->in_data.pica_basicP);
+
+	A_long currentIndex = (yL * siP->inWidth) + xL;
+
+	outP->alpha = inP->alpha;
+	outP->red = log(1 + sqrt(pow(siP->out[currentIndex][0], 2) + pow(siP->out[currentIndex][1], 2)) );
+	outP->green = 0;
+	outP->blue = 0;
+
+	return err;
+}
+
+PF_Err
 fftRowsTh(
 	void *refcon,
 	A_long threadNum,

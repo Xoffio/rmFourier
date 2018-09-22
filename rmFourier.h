@@ -40,6 +40,7 @@ typedef short int			int16;
 #include <complex>
 #include <ratio>
 #include <thread>
+#include <fftw3.h>
 
 const std::string   strName = "rmFourier",
 					strDescription = "RM skeleton for ctrl plugind";
@@ -88,6 +89,7 @@ typedef struct {
 	
 	std::vector<std::complex<double> >	imgVectorR, imgVectorG, imgVectorB, imgVectorGS,
 										phaseVectorR, phaseVectorG, phaseVectorB, phaseVectorGS;
+	fftw_complex *in, *out;
 	double								rMax, gMax, bMax;
 	A_long								inWidth, inHeight,
 										outWidth, outHeight;
@@ -121,6 +123,14 @@ extern "C" {
 
 static PF_PixelFloat
 *getXY32(PF_EffectWorld &def, int x, int y);
+
+PF_Err
+vectorToPixelTmp(
+	void			*refcon,
+	A_long 			xL,
+	A_long 			yL,
+	PF_PixelFloat 	*inP,
+	PF_PixelFloat 	*outP);
 
 PF_Err
 normalizeImg(

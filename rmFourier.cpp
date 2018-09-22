@@ -365,7 +365,44 @@ SmartRender(
 								if (input_worldP->data && output_worldP->data) {
 									ERR(PF_PROGRESS(in_data, 1, 100));
 
-									if (infoP->inverseCB) {
+									//fftw_complex *in, *out;
+									fftw_plan plan;
+									infoP->in = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * infoP->inWidth * infoP->inHeight);
+									infoP->out = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * infoP->inWidth * infoP->inHeight);
+									
+
+									// Fill matrix with image
+									for (A_long x = 0; x < infoP->inWidth; x++) {
+										for (A_long y = 0; y < infoP->inHeight; y++) {
+											unsigned long srcPPixel = (y * infoP->inWidth) + x;
+											PF_PixelFloat *srcPixel = (PF_PixelFloat*)((char*)infoP->input_worldP->data + (srcPPixel * sizeof(PF_PixelFloat)));
+
+											infoP->in[srcPPixel][0] = srcPixel->red;
+											infoP->in[srcPPixel][1] = 0.0f;
+										}
+									}
+
+									plan = fftw_plan_dft_2d(infoP->inHeight, infoP->inWidth, infoP->in, infoP->out, FFTW_FORWARD, FFTW_ESTIMATE);
+									fftw_execute(plan);
+
+									// Put the values in the vector back to the image, also get the max in order to normalize later
+									ERR(suites.IterateFloatSuite1()->iterate(
+										in_data,
+										0,							// progress base
+										infoP->inHeight,			// progress final
+										input_worldP,				// src
+										NULL,						// area - null for all pixels
+										(void*)infoP,				// custom data pointer
+										vectorToPixelTmp,				// pixel function pointer
+										output_worldP
+									));
+
+									fftw_destroy_plan(plan);
+
+									fftw_free(infoP->in);
+									fftw_free(infoP->out);
+
+									/*if (infoP->inverseCB) {
 										infoP->tmp_worldP = phase_worldP;
 
 										// Compute the fftshift
@@ -432,7 +469,7 @@ SmartRender(
 									));
 
 									// If I want to get the magnitude only
-									if (!infoP->inverseCB && !infoP->fftPhase) {
+									if (!infoP->inverseCB && !infoP->fftPhase) {*/
 										// Normalize the image
 										/*ERR(suites.IterateFloatSuite1()->iterate(
 										in_data,
@@ -448,7 +485,7 @@ SmartRender(
 										// Before I do the fftshift I need to make a copy of 
 										// the output world so I can compute the effect in
 										// multithread mode. (tmp solution. I might change this in the future)
-										ERR(wsP->PF_NewWorld(in_data->effect_ref,	// New world
+										/*ERR(wsP->PF_NewWorld(in_data->effect_ref,	// New world
 											infoP->inWidth,
 											infoP->inHeight,
 											NULL,
@@ -486,7 +523,7 @@ SmartRender(
 											normalizeImg,				// pixel function pointer
 											output_worldP
 										));
-									}
+									}*/
 								}
 
 								break;
