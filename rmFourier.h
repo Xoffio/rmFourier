@@ -41,6 +41,7 @@ typedef short int			int16;
 #include <ratio>
 #include <thread>
 #include <fftw3.h>
+#include <time.h>
 
 const std::string   strName = "rmFourier",
 					strDescription = "RM skeleton for ctrl plugind";
@@ -89,7 +90,10 @@ typedef struct {
 	
 	std::vector<std::complex<double> >	imgVectorR, imgVectorG, imgVectorB, imgVectorGS,
 										phaseVectorR, phaseVectorG, phaseVectorB, phaseVectorGS;
-	fftw_complex *in, *out;
+
+	fftw_complex						*inVectorR, *outVectorR,
+										*inVectorG, *outVectorG,
+										*inVectorB, *outVectorB;
 	double								rMax, gMax, bMax;
 	A_long								inWidth, inHeight,
 										outWidth, outHeight;
@@ -131,6 +135,13 @@ vectorToPixelTmp(
 	A_long 			yL,
 	PF_PixelFloat 	*inP,
 	PF_PixelFloat 	*outP);
+
+PF_Err
+pixelToVectorTmp(
+	void *refcon,
+	A_long threadNum,
+	A_long iterationCount,
+	A_long numOfIterations);
 
 PF_Err
 normalizeImg(

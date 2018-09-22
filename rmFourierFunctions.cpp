@@ -227,6 +227,42 @@ vectorToPixel(
 }
 
 PF_Err
+pixelToVectorTmp(
+	void *refcon,
+	A_long threadNum,
+	A_long iterationCount,
+	A_long numOfIterations)
+{
+	PF_Err err = PF_Err_NONE;
+	register rmFourierInfo	*siP = (rmFourierInfo*)refcon;
+
+	AEGP_SuiteHandler suites(siP->in_data.pica_basicP);
+
+	for (A_long xL = 0; xL < siP->inWidth; xL++) {
+		A_long currentIndex = (iterationCount * siP->inWidth) + xL;
+		PF_PixelFloat *pixelPointerAt = NULL;
+
+		pixelPointerAt = (PF_PixelFloat*)((char*)siP->input_worldP->data + (currentIndex * sizeof(PF_PixelFloat)));
+
+		if (siP->colorComputations[0]) {
+			siP->inVectorR[currentIndex][0] = pixelPointerAt->red;
+			siP->inVectorR[currentIndex][1] = 0.0f;
+		}
+		if (siP->colorComputations[1]) {
+			siP->inVectorG[currentIndex][0] = pixelPointerAt->green;
+			siP->inVectorG[currentIndex][1] = 0.0f;
+		}
+		if (siP->colorComputations[2]) {
+			siP->inVectorB[currentIndex][0] = pixelPointerAt->blue;
+			siP->inVectorB[currentIndex][1] = 0.0f;
+		}
+		
+	}
+
+	return err;
+}
+
+PF_Err
 vectorToPixelTmp(
 	void			*refcon,
 	A_long 			xL,
@@ -235,16 +271,43 @@ vectorToPixelTmp(
 	PF_PixelFloat 	*outP)
 {
 	register rmFourierInfo	*siP = (rmFourierInfo*)refcon;
-	PF_Err				err = PF_Err_NONE;
+	PF_Err					err = PF_Err_NONE;
+	PF_PixelFloat			tmpPixel;
 
 	AEGP_SuiteHandler suites(siP->in_data.pica_basicP);
 
 	A_long currentIndex = (yL * siP->inWidth) + xL;
 
+	if (!siP->inverseCB) {
+		if (!siP->fftPhase) {
+			if (siP->colorComputations[0]) tmpPixel.red = log(1 + sqrt(pow(siP->outVectorR[currentIndex][0], 2) + pow(siP->outVectorR[currentIndex][1], 2)));
+			else tmpPixel.red = 0;
+
+			if (siP->colorComputations[1]) tmpPixel.green = log(1 + sqrt(pow(siP->outVectorG[currentIndex][0], 2) + pow(siP->outVectorG[currentIndex][1], 2)));
+			else tmpPixel.green = 0;
+
+			if (siP->colorComputations[2]) tmpPixel.blue = log(1 + sqrt(pow(siP->outVectorB[currentIndex][0], 2) + pow(siP->outVectorB[currentIndex][1], 2)));
+			else tmpPixel.blue = 0;
+		}
+		else {
+			if (siP->colorComputations[0]) tmpPixel.red = atan2(siP->outVectorR[currentIndex][1], siP->outVectorR[currentIndex][0]);
+			else tmpPixel.red = 0;
+
+			if (siP->colorComputations[1]) tmpPixel.green = atan2(siP->outVectorG[currentIndex][1], siP->outVectorG[currentIndex][0]);
+			else tmpPixel.green = 0;
+
+			if (siP->colorComputations[2]) tmpPixel.blue = atan2(siP->outVectorB[currentIndex][1], siP->outVectorB[currentIndex][0]);
+			else tmpPixel.blue = 0;
+		}
+	}
+	else {
+
+	}
+
 	outP->alpha = inP->alpha;
-	outP->red = log(1 + sqrt(pow(siP->out[currentIndex][0], 2) + pow(siP->out[currentIndex][1], 2)) );
-	outP->green = 0;
-	outP->blue = 0;
+	outP->red	= tmpPixel.red;
+	outP->green = tmpPixel.green;
+	outP->blue	= tmpPixel.blue;
 
 	return err;
 }

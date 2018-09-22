@@ -353,23 +353,6 @@ SmartRender(
 
 						A_long imgSize = infoP->inWidth * infoP->inHeight;
 
-						fftw_plan planR, planG, planB;
-						//int a = fftw_init_threads();
-
-						// Initialize the vectors
-						if (infoP->colorComputations[0]) {
-							infoP->inVectorR = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * infoP->inWidth * infoP->inHeight);
-							infoP->outVectorR = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * infoP->inWidth * infoP->inHeight);
-						}
-						if (infoP->colorComputations[1]) {
-							infoP->inVectorG = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * infoP->inWidth * infoP->inHeight);
-							infoP->outVectorG = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * infoP->inWidth * infoP->inHeight);
-						}
-						if (infoP->colorComputations[2]) {
-							infoP->inVectorB = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * infoP->inWidth * infoP->inHeight);
-							infoP->outVectorB = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * infoP->inWidth * infoP->inHeight);
-						}
-
 						switch (format) {
 
 							case PF_PixelFormat_ARGB128: {
@@ -385,6 +368,22 @@ SmartRender(
 
 									}
 									else {
+										fftw_plan planR, planG, planB;
+										//int a = fftw_init_threads();
+
+										// Initialize the vectors
+										if (infoP->colorComputations[0]) {
+											infoP->inVectorR = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * infoP->inWidth * infoP->inHeight);
+											infoP->outVectorR = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * infoP->inWidth * infoP->inHeight);
+										}
+										if (infoP->colorComputations[1]) {
+											infoP->inVectorG = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * infoP->inWidth * infoP->inHeight);
+											infoP->outVectorG = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * infoP->inWidth * infoP->inHeight);
+										}
+										if (infoP->colorComputations[2]) {
+											infoP->inVectorB = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * infoP->inWidth * infoP->inHeight);
+											infoP->outVectorB = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * infoP->inWidth * infoP->inHeight);
+										}
 
 										// Get the pixels from worldspace and fill the tmp vectors with it.
 										ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
