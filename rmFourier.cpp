@@ -370,6 +370,12 @@ SmartRender(
 							infoP->outVectorB = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * infoP->inWidth * infoP->inHeight);
 						}
 
+						int sign;
+						if (infoP->inverseCB) sign = FFTW_BACKWARD;
+						else sign = FFTW_FORWARD;
+
+
+
 						switch (format) {
 
 							case PF_PixelFormat_ARGB128: {
@@ -382,74 +388,78 @@ SmartRender(
 									//ERR(PF_PROGRESS(in_data, 1, 100));
 
 									if (infoP->inverseCB) {
+										infoP->tmp_worldP = phase_worldP;
 
-									}
-									else {
-
-										// Get the pixels from worldspace and fill the tmp vectors with it.
+										// Compute the fftshift
 										ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
 											infoP->inHeight,
 											(void*)infoP,
-											pixelToVectorTmp));
-
-										// Get max number of threads
-										//ERR(suites.IterateSuite1()->AEGP_GetNumThreads(&infoP->nMaxThreads));
-
-										//fftw_plan_with_nthreads(infoP->nMaxThreads);
-
-
-										if (infoP->colorComputations[0]) {
-											planR = fftw_plan_dft_2d(infoP->inHeight, infoP->inWidth, infoP->inVectorR, infoP->outVectorR, FFTW_FORWARD, FFTW_ESTIMATE);
-											fftw_execute(planR);
-										}
-										if (infoP->colorComputations[1]) {
-											planG = fftw_plan_dft_2d(infoP->inHeight, infoP->inWidth, infoP->inVectorG, infoP->outVectorG, FFTW_FORWARD, FFTW_ESTIMATE);
-											fftw_execute(planG);
-										}
-										if (infoP->colorComputations[2]) {
-											planB = fftw_plan_dft_2d(infoP->inHeight, infoP->inWidth, infoP->inVectorB, infoP->outVectorB, FFTW_FORWARD, FFTW_ESTIMATE);
-											fftw_execute(planB);
-										}
-										
-										// Put the values from the vector back to the worldspace
-										ERR(suites.IterateFloatSuite1()->iterate(
-											in_data,
-											0,							// progress base
-											infoP->inHeight,			// progress final
-											input_worldP,				// src
-											NULL,						// area - null for all pixels
-											(void*)infoP,				// custom data pointer
-											vectorToPixelTmp,				// pixel function pointer
-											output_worldP
-										));
-
-										if (infoP->colorComputations[0]) {
-											fftw_destroy_plan(planR);
-											fftw_free(infoP->inVectorR);
-											fftw_free(infoP->outVectorR);
-										}
-										if (infoP->colorComputations[1]) {
-											fftw_destroy_plan(planG);
-											fftw_free(infoP->inVectorG);
-											fftw_free(infoP->outVectorG);
-										}
-										if (infoP->colorComputations[2]) {
-											planB = fftw_plan_dft_2d(infoP->inHeight, infoP->inWidth, infoP->inVectorB, infoP->outVectorB, FFTW_FORWARD, FFTW_ESTIMATE);
-											fftw_destroy_plan(planB);
-											fftw_free(infoP->inVectorB);
-											fftw_free(infoP->outVectorB);
-										}
-
-										end = clock();
-										time_taken = ((double)(end - start)) / CLOCKS_PER_SEC;
-										
-										//fftw_cleanup_threads();
+											ifftShift));
 									}
+
+									// Get the pixels from worldspace and fill the tmp vectors with it.
+									ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
+										infoP->inHeight,
+										(void*)infoP,
+										pixelToVectorTmp));
+
+									// Get max number of threads
+									//ERR(suites.IterateSuite1()->AEGP_GetNumThreads(&infoP->nMaxThreads));
+
+									//fftw_plan_with_nthreads(infoP->nMaxThreads);
+
+									// Compute FFT or IFFT
+									if (infoP->colorComputations[0]) {
+										planR = fftw_plan_dft_2d(infoP->inHeight, infoP->inWidth, infoP->inVectorR, infoP->outVectorR, sign, FFTW_ESTIMATE);
+										fftw_execute(planR);
+									}
+									if (infoP->colorComputations[1]) {
+										planG = fftw_plan_dft_2d(infoP->inHeight, infoP->inWidth, infoP->inVectorG, infoP->outVectorG, sign, FFTW_ESTIMATE);
+										fftw_execute(planG);
+									}
+									if (infoP->colorComputations[2]) {
+										planB = fftw_plan_dft_2d(infoP->inHeight, infoP->inWidth, infoP->inVectorB, infoP->outVectorB, sign, FFTW_ESTIMATE);
+										fftw_execute(planB);
+									}
+										
+									// Put the values from the vector back to the worldspace
+									ERR(suites.IterateFloatSuite1()->iterate(
+										in_data,
+										0,							// progress base
+										infoP->inHeight,			// progress final
+										input_worldP,				// src
+										NULL,						// area - null for all pixels
+										(void*)infoP,				// custom data pointer
+										vectorToPixelTmp,				// pixel function pointer
+										output_worldP
+									));
+
+									// Free memory
+									if (infoP->colorComputations[0]) {
+										fftw_destroy_plan(planR);
+										fftw_free(infoP->inVectorR);
+										fftw_free(infoP->outVectorR);
+									}
+									if (infoP->colorComputations[1]) {
+										fftw_destroy_plan(planG);
+										fftw_free(infoP->inVectorG);
+										fftw_free(infoP->outVectorG);
+									}
+									if (infoP->colorComputations[2]) {
+										fftw_destroy_plan(planB);
+										fftw_free(infoP->inVectorB);
+										fftw_free(infoP->outVectorB);
+									}
+
+									end = clock();
+									time_taken = ((double)(end - start)) / CLOCKS_PER_SEC;
+
+									//fftw_cleanup_threads();
 
 									// If I want to get the magnitude only
 									if (!infoP->inverseCB && !infoP->fftPhase) {
 										// Normalize the image
-										ERR(suites.IterateFloatSuite1()->iterate(
+										/*ERR(suites.IterateFloatSuite1()->iterate(
 											in_data,
 											0,							// progress base
 											output_worldP->height,		// progress final
@@ -458,7 +468,7 @@ SmartRender(
 											(void*)infoP,				// custom data pointer
 											normalizeImg,				// pixel function pointer
 											output_worldP
-										));
+										));*/
 
 										// Before I do the fftshift I need to make a copy of 
 										// the output world so I can compute the effect in
@@ -489,7 +499,19 @@ SmartRender(
 										ERR(wsP->PF_DisposeWorld(in_data->effect_ref, &copy_worldP));
 									}
 									
-
+									if (infoP->inverseCB) {
+										// Normalize the image
+										ERR(suites.IterateFloatSuite1()->iterate(
+											in_data,
+											0,							// progress base
+											infoP->inHeight,			// progress final
+											output_worldP,				// src
+											NULL,						// area - null for all pixels
+											(void*)infoP,				// custom data pointer
+											normalizeImg,				// pixel function pointer
+											output_worldP
+										));
+									}
 									
 
 									
