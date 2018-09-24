@@ -129,14 +129,6 @@ static PF_PixelFloat
 *getXY32(PF_EffectWorld &def, int x, int y);
 
 PF_Err
-vectorToPixelTmp(
-	void			*refcon,
-	A_long 			xL,
-	A_long 			yL,
-	PF_PixelFloat 	*inP,
-	PF_PixelFloat 	*outP);
-
-PF_Err
 pixelToVectorTmp(
 	void *refcon,
 	A_long threadNum,

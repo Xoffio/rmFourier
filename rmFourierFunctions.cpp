@@ -134,99 +134,6 @@ pixelToVector(
 }
 
 PF_Err
-vectorToPixel(
-	void			*refcon,
-	A_long 			xL,
-	A_long 			yL,
-	PF_PixelFloat 	*inP,
-	PF_PixelFloat 	*outP)
-{
-	register rmFourierInfo	*siP = (rmFourierInfo*)refcon;
-	PF_Err				err = PF_Err_NONE;
-
-	AEGP_SuiteHandler suites(siP->in_data.pica_basicP);
-
-	A_long currentIndex = (yL * siP->inWidth) + xL;
-
-	PF_FpShort finalR, finalG, finalB, finalGS;
-
-	if (!siP->inverseCB) {
-		if (!siP->fftPhase) {
-
-			if (siP->colorComputations[3]) {
-				finalGS = log(1 + abs(siP->imgVectorGS[currentIndex]));
-				finalR = finalGS;
-				finalG = finalGS;
-				finalB = finalGS;
-			}
-			else {
-				if (siP->colorComputations[0]) finalR = log(1 + abs(siP->imgVectorR[currentIndex]));
-				else finalR = 0;
-
-				if (siP->colorComputations[1]) finalG = log(1 + abs(siP->imgVectorG[currentIndex]));
-				else finalG = 0;
-
-				if (siP->colorComputations[2]) finalB = log(1 + abs(siP->imgVectorB[currentIndex]));
-				else finalB = 0;
-			}
-
-			if (finalR > siP->rMax) siP->rMax = finalR;
-			if (finalR > siP->gMax) siP->gMax = finalG;
-			if (finalR > siP->bMax) siP->bMax = finalB;
-		}
-		else {
-			if (siP->colorComputations[3]) {
-				finalGS = atan2(siP->imgVectorGS[currentIndex].imag(), siP->imgVectorGS[currentIndex].real());
-				finalR = finalGS;
-				finalG = finalGS;
-				finalB = finalGS;
-			}
-			else {
-				if (siP->colorComputations[0]) finalR = atan2(siP->imgVectorR[currentIndex].imag(), siP->imgVectorR[currentIndex].real());
-				else finalR = 0;
-
-				if (siP->colorComputations[1]) finalG = atan2(siP->imgVectorG[currentIndex].imag(), siP->imgVectorG[currentIndex].real());
-				else finalG = 0;
-
-				if (siP->colorComputations[2]) finalB = atan2(siP->imgVectorB[currentIndex].imag(), siP->imgVectorB[currentIndex].real());
-				else finalB = 0;
-			}
-			
-		}
-		
-	}
-	else {
-		if (siP->colorComputations[3]) {
-			finalGS = finalR = abs(siP->imgVectorGS[currentIndex]);
-			finalR = finalGS;
-			finalG = finalGS;
-			finalB = finalGS;
-		}
-		else {
-			if (siP->colorComputations[0]) finalR = abs(siP->imgVectorR[currentIndex]);
-			else finalR = 0;
-
-			if (siP->colorComputations[1]) finalG = abs(siP->imgVectorG[currentIndex]);
-			else finalG = 0;
-
-			if (siP->colorComputations[2]) finalB = abs(siP->imgVectorB[currentIndex]);
-			else finalB = 0;
-		}
-
-		if (finalR > siP->rMax) siP->rMax = finalR;
-		if (finalG > siP->gMax) siP->gMax = finalG;
-		if (finalB > siP->bMax) siP->bMax = finalB;
-	}
-
-	outP->alpha = inP->alpha;
-	outP->red = finalR;
-	outP->green = finalG;
-	outP->blue = finalB;
-
-	return err;
-}
-
-PF_Err
 pixelToVectorTmp(
 	void *refcon,
 	A_long threadNum,
@@ -271,8 +178,8 @@ pixelToVectorTmp(
 				siP->inVectorG[currentIndex][1] = pixelPointerAt->green * sin(phasePixelPointAt->green);
 			}
 			if (siP->colorComputations[2]) {
-				siP->inVectorB[currentIndex][0] = (exp(pixelPointerAt->blue)*100) * cos(phasePixelPointAt->blue);
-				siP->inVectorB[currentIndex][1] = (exp(pixelPointerAt->blue)*100) * sin(phasePixelPointAt->blue);
+				siP->inVectorB[currentIndex][0] = (1/pixelPointerAt->blue) * cos(phasePixelPointAt->blue);
+				siP->inVectorB[currentIndex][1] = (1/pixelPointerAt->blue) * sin(phasePixelPointAt->blue);
 			}
 		}
 	}
@@ -281,7 +188,7 @@ pixelToVectorTmp(
 }
 
 PF_Err
-vectorToPixelTmp(
+vectorToPixel(
 	void			*refcon,
 	A_long 			xL,
 	A_long 			yL,
@@ -297,36 +204,53 @@ vectorToPixelTmp(
 	A_long currentIndex = (yL * siP->inWidth) + xL;
 
 	if (!siP->inverseCB) {
-		if (!siP->fftPhase) {
-			if (siP->colorComputations[0]) tmpPixel.red = sqrt(pow(siP->outVectorR[currentIndex][0], 2) + pow(siP->outVectorR[currentIndex][1], 2));
-			else tmpPixel.red = 0;
+		if (!siP->fftPhase) { // Compute the magnitude
 
-			if (siP->colorComputations[1]) tmpPixel.green = sqrt(pow(siP->outVectorG[currentIndex][0], 2) + pow(siP->outVectorG[currentIndex][1], 2));
-			else tmpPixel.green = 0;
+			if (siP->colorComputations[3]) {
 
-			if (siP->colorComputations[2]) tmpPixel.blue = log(sqrt(pow(siP->outVectorB[currentIndex][0], 2) + pow(siP->outVectorB[currentIndex][1], 2)) / 100.0);
-			else tmpPixel.blue = 0;
+			}
+			else {
+				if (siP->colorComputations[0]) tmpPixel.red = sqrt(pow(siP->outVectorR[currentIndex][0], 2) + pow(siP->outVectorR[currentIndex][1], 2));
+				else tmpPixel.red = 0;
+
+				if (siP->colorComputations[1]) tmpPixel.green = sqrt(pow(siP->outVectorG[currentIndex][0], 2) + pow(siP->outVectorG[currentIndex][1], 2));
+				else tmpPixel.green = 0;
+
+				if (siP->colorComputations[2]) tmpPixel.blue = 1 / sqrt(pow(siP->outVectorB[currentIndex][0], 2) + pow(siP->outVectorB[currentIndex][1], 2));
+				else tmpPixel.blue = 0;
+			}
 		}
-		else {
-			if (siP->colorComputations[0]) tmpPixel.red = atan2(siP->outVectorR[currentIndex][1], siP->outVectorR[currentIndex][0]);
-			else tmpPixel.red = 0;
+		else { // Compute the phase
 
-			if (siP->colorComputations[1]) tmpPixel.green = atan2(siP->outVectorG[currentIndex][1], siP->outVectorG[currentIndex][0]);
-			else tmpPixel.green = 0;
+			if (siP->colorComputations[3]) {
 
-			if (siP->colorComputations[2]) tmpPixel.blue = atan2(siP->outVectorB[currentIndex][1], siP->outVectorB[currentIndex][0]);
-			else tmpPixel.blue = 0;
+			}
+			else {
+				if (siP->colorComputations[0]) tmpPixel.red = atan2(siP->outVectorR[currentIndex][1], siP->outVectorR[currentIndex][0]);
+				else tmpPixel.red = 0;
+
+				if (siP->colorComputations[1]) tmpPixel.green = atan2(siP->outVectorG[currentIndex][1], siP->outVectorG[currentIndex][0]);
+				else tmpPixel.green = 0;
+
+				if (siP->colorComputations[2]) tmpPixel.blue = atan2(siP->outVectorB[currentIndex][1], siP->outVectorB[currentIndex][0]);
+				else tmpPixel.blue = 0;
+			}
 		}
 	}
-	else {
-		if (siP->colorComputations[0]) tmpPixel.red = siP->outVectorR[currentIndex][0];
-		else tmpPixel.red = 0;
+	else { // When inverse
+		if (siP->colorComputations[3]) {
 
-		if (siP->colorComputations[1]) tmpPixel.green = siP->outVectorG[currentIndex][0];
-		else tmpPixel.green = 0;
+		}
+		else {
+			if (siP->colorComputations[0]) tmpPixel.red = siP->outVectorR[currentIndex][0];
+			else tmpPixel.red = 0;
 
-		if (siP->colorComputations[2]) tmpPixel.blue = siP->outVectorB[currentIndex][0];
-		else tmpPixel.blue = 0;
+			if (siP->colorComputations[1]) tmpPixel.green = siP->outVectorG[currentIndex][0];
+			else tmpPixel.green = 0;
+
+			if (siP->colorComputations[2]) tmpPixel.blue = siP->outVectorB[currentIndex][0];
+			else tmpPixel.blue = 0;
+		}
 	}
 
 	if (tmpPixel.red > siP->rMax) siP->rMax = tmpPixel.red;

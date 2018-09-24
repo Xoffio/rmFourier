@@ -430,7 +430,7 @@ SmartRender(
 										input_worldP,				// src
 										NULL,						// area - null for all pixels
 										(void*)infoP,				// custom data pointer
-										vectorToPixelTmp,				// pixel function pointer
+										vectorToPixel,				// pixel function pointer
 										output_worldP
 									));
 
