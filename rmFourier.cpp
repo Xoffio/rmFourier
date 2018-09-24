@@ -353,28 +353,32 @@ SmartRender(
 
 						A_long imgSize = infoP->inWidth * infoP->inHeight;
 
-						fftw_plan planR, planG, planB;
+						fftw_plan planR, planG, planB, planGS;
 						//int a = fftw_init_threads();
 
 						// Initialize the vectors
-						if (infoP->colorComputations[0]) {
-							infoP->inVectorR = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * infoP->inWidth * infoP->inHeight);
-							infoP->outVectorR = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * infoP->inWidth * infoP->inHeight);
+						if (infoP->colorComputations[3]) {
+							infoP->inVectorGS = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * infoP->inWidth * infoP->inHeight);
+							infoP->outVectorGS = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * infoP->inWidth * infoP->inHeight);
 						}
-						if (infoP->colorComputations[1]) {
-							infoP->inVectorG = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * infoP->inWidth * infoP->inHeight);
-							infoP->outVectorG = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * infoP->inWidth * infoP->inHeight);
-						}
-						if (infoP->colorComputations[2]) {
-							infoP->inVectorB = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * infoP->inWidth * infoP->inHeight);
-							infoP->outVectorB = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * infoP->inWidth * infoP->inHeight);
+						else {
+							if (infoP->colorComputations[0]) {
+								infoP->inVectorR = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * infoP->inWidth * infoP->inHeight);
+								infoP->outVectorR = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * infoP->inWidth * infoP->inHeight);
+							}
+							if (infoP->colorComputations[1]) {
+								infoP->inVectorG = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * infoP->inWidth * infoP->inHeight);
+								infoP->outVectorG = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * infoP->inWidth * infoP->inHeight);
+							}
+							if (infoP->colorComputations[2]) {
+								infoP->inVectorB = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * infoP->inWidth * infoP->inHeight);
+								infoP->outVectorB = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * infoP->inWidth * infoP->inHeight);
+							}
 						}
 
 						int sign;
 						if (infoP->inverseCB) sign = FFTW_BACKWARD;
 						else sign = FFTW_FORWARD;
-
-
 
 						switch (format) {
 
@@ -401,7 +405,7 @@ SmartRender(
 									ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
 										infoP->inHeight,
 										(void*)infoP,
-										pixelToVectorTmp));
+										pixelToVector));
 
 									// Get max number of threads
 									//ERR(suites.IterateSuite1()->AEGP_GetNumThreads(&infoP->nMaxThreads));
@@ -409,17 +413,23 @@ SmartRender(
 									//fftw_plan_with_nthreads(infoP->nMaxThreads);
 
 									// Compute FFT or IFFT
-									if (infoP->colorComputations[0]) {
-										planR = fftw_plan_dft_2d(infoP->inHeight, infoP->inWidth, infoP->inVectorR, infoP->outVectorR, sign, FFTW_ESTIMATE);
-										fftw_execute(planR);
+									if (infoP->colorComputations[3]) {
+										planGS = fftw_plan_dft_2d(infoP->inHeight, infoP->inWidth, infoP->inVectorGS, infoP->outVectorGS, sign, FFTW_ESTIMATE);
+										fftw_execute(planGS);
 									}
-									if (infoP->colorComputations[1]) {
-										planG = fftw_plan_dft_2d(infoP->inHeight, infoP->inWidth, infoP->inVectorG, infoP->outVectorG, sign, FFTW_ESTIMATE);
-										fftw_execute(planG);
-									}
-									if (infoP->colorComputations[2]) {
-										planB = fftw_plan_dft_2d(infoP->inHeight, infoP->inWidth, infoP->inVectorB, infoP->outVectorB, sign, FFTW_ESTIMATE);
-										fftw_execute(planB);
+									else {
+										if (infoP->colorComputations[0]) {
+											planR = fftw_plan_dft_2d(infoP->inHeight, infoP->inWidth, infoP->inVectorR, infoP->outVectorR, sign, FFTW_ESTIMATE);
+											fftw_execute(planR);
+										}
+										if (infoP->colorComputations[1]) {
+											planG = fftw_plan_dft_2d(infoP->inHeight, infoP->inWidth, infoP->inVectorG, infoP->outVectorG, sign, FFTW_ESTIMATE);
+											fftw_execute(planG);
+										}
+										if (infoP->colorComputations[2]) {
+											planB = fftw_plan_dft_2d(infoP->inHeight, infoP->inWidth, infoP->inVectorB, infoP->outVectorB, sign, FFTW_ESTIMATE);
+											fftw_execute(planB);
+										}
 									}
 										
 									// Put the values from the vector back to the worldspace
@@ -435,20 +445,27 @@ SmartRender(
 									));
 
 									// Free memory
-									if (infoP->colorComputations[0]) {
-										fftw_destroy_plan(planR);
-										fftw_free(infoP->inVectorR);
-										fftw_free(infoP->outVectorR);
+									if (infoP->colorComputations[3]) {
+										fftw_destroy_plan(planGS);
+										fftw_free(infoP->inVectorGS);
+										fftw_free(infoP->outVectorGS);
 									}
-									if (infoP->colorComputations[1]) {
-										fftw_destroy_plan(planG);
-										fftw_free(infoP->inVectorG);
-										fftw_free(infoP->outVectorG);
-									}
-									if (infoP->colorComputations[2]) {
-										fftw_destroy_plan(planB);
-										fftw_free(infoP->inVectorB);
-										fftw_free(infoP->outVectorB);
+									else {
+										if (infoP->colorComputations[0]) {
+											fftw_destroy_plan(planR);
+											fftw_free(infoP->inVectorR);
+											fftw_free(infoP->outVectorR);
+										}
+										if (infoP->colorComputations[1]) {
+											fftw_destroy_plan(planG);
+											fftw_free(infoP->inVectorG);
+											fftw_free(infoP->outVectorG);
+										}
+										if (infoP->colorComputations[2]) {
+											fftw_destroy_plan(planB);
+											fftw_free(infoP->inVectorB);
+											fftw_free(infoP->outVectorB);
+										}
 									}
 
 									end = clock();

@@ -93,7 +93,8 @@ typedef struct {
 
 	fftw_complex						*inVectorR, *outVectorR,
 										*inVectorG, *outVectorG,
-										*inVectorB, *outVectorB;
+										*inVectorB, *outVectorB,
+										*inVectorGS, *outVectorGS;
 	double								rMax, gMax, bMax;
 	A_long								inWidth, inHeight,
 										outWidth, outHeight;
@@ -127,13 +128,6 @@ extern "C" {
 
 static PF_PixelFloat
 *getXY32(PF_EffectWorld &def, int x, int y);
-
-PF_Err
-pixelToVectorTmp(
-	void *refcon,
-	A_long threadNum,
-	A_long iterationCount,
-	A_long numOfIterations);
 
 PF_Err
 normalizeImg(

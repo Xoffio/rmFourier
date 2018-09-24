@@ -108,78 +108,56 @@ pixelToVector(
 
 	for (A_long xL = 0; xL < siP->inWidth; xL++) {
 		A_long currentIndex = (iterationCount * siP->inWidth) + xL;
-		PF_PixelFloat *pixelPointerAt = NULL;
-
-		pixelPointerAt = (PF_PixelFloat*)((char*)siP->input_worldP->data + (currentIndex * sizeof(PF_PixelFloat)));
-
-		if (siP->colorComputations[3]) {
-			double grayPixel = (pixelPointerAt->red + pixelPointerAt->green + pixelPointerAt->blue) / 3;
-			siP->imgVectorGS[currentIndex].real(grayPixel);
-		}
-		else {
-			if (siP->colorComputations[0]) siP->imgVectorR[currentIndex].real(pixelPointerAt->red);
-			if (siP->colorComputations[1]) siP->imgVectorG[currentIndex].real(pixelPointerAt->green);
-			if (siP->colorComputations[2]) siP->imgVectorB[currentIndex].real(pixelPointerAt->blue);
-		}
-		
-	}
-
-	/*siP->currentProcess += 1;
-	if (siP->currentProcess >= numOfIterations) {
-		siP->currentProcess = 0;
-		ERR(PF_PROGRESS(&siP->in_data, 1, 10));
-	}*/
-
-	return err;
-}
-
-PF_Err
-pixelToVectorTmp(
-	void *refcon,
-	A_long threadNum,
-	A_long iterationCount,
-	A_long numOfIterations)
-{
-	PF_Err err = PF_Err_NONE;
-	register rmFourierInfo	*siP = (rmFourierInfo*)refcon;
-
-	AEGP_SuiteHandler suites(siP->in_data.pica_basicP);
-
-	for (A_long xL = 0; xL < siP->inWidth; xL++) {
-		A_long currentIndex = (iterationCount * siP->inWidth) + xL;
 		PF_PixelFloat *pixelPointerAt, *phasePixelPointAt;
 
 		if (!siP->inverseCB) {
 			pixelPointerAt = (PF_PixelFloat*)((char*)siP->input_worldP->data + (currentIndex * sizeof(PF_PixelFloat)));
 
-			if (siP->colorComputations[0]) {
-				siP->inVectorR[currentIndex][0] = pixelPointerAt->red;
-				siP->inVectorR[currentIndex][1] = 0.0f;
+			if (siP->colorComputations[3]) {
+				siP->inVectorGS[currentIndex][0] = (pixelPointerAt->red + pixelPointerAt->green + pixelPointerAt->blue)/3;
+				siP->inVectorGS[currentIndex][1] = 0.0f;
 			}
-			if (siP->colorComputations[1]) {
-				siP->inVectorG[currentIndex][0] = pixelPointerAt->green;
-				siP->inVectorG[currentIndex][1] = 0.0f;
+			else {
+				if (siP->colorComputations[0]) {
+					siP->inVectorR[currentIndex][0] = pixelPointerAt->red;
+					siP->inVectorR[currentIndex][1] = 0.0f;
+				}
+				if (siP->colorComputations[1]) {
+					siP->inVectorG[currentIndex][0] = pixelPointerAt->green;
+					siP->inVectorG[currentIndex][1] = 0.0f;
+				}
+				if (siP->colorComputations[2]) {
+					siP->inVectorB[currentIndex][0] = pixelPointerAt->blue;
+					siP->inVectorB[currentIndex][1] = 0.0f;
+				}
 			}
-			if (siP->colorComputations[2]) {
-				siP->inVectorB[currentIndex][0] = pixelPointerAt->blue;
-				siP->inVectorB[currentIndex][1] = 0.0f;
-			}
+			
 		}
 		else {
 			pixelPointerAt = (PF_PixelFloat*)((char*)siP->output_worldP->data + (currentIndex * sizeof(PF_PixelFloat)));
 			phasePixelPointAt = (PF_PixelFloat*)((char*)siP->tmp_worldP->data + (currentIndex * sizeof(PF_PixelFloat)));
 
-			if (siP->colorComputations[0]) {
-				siP->inVectorR[currentIndex][0] = pixelPointerAt->red * cos(phasePixelPointAt->red);
-				siP->inVectorR[currentIndex][1] = pixelPointerAt->red * sin(phasePixelPointAt->red);
+			if (siP->colorComputations[3]) {
+				double tmpMagGrayscale, tmpPhaGrayscale;
+				tmpMagGrayscale = (pixelPointerAt->red + pixelPointerAt->green + pixelPointerAt->blue) / 3;
+				tmpPhaGrayscale = (phasePixelPointAt->red + phasePixelPointAt->green + phasePixelPointAt->blue) / 3;
+
+				siP->inVectorGS[currentIndex][0] = tmpMagGrayscale * cos(tmpPhaGrayscale);
+				siP->inVectorGS[currentIndex][1] = tmpMagGrayscale * sin(tmpPhaGrayscale);
 			}
-			if (siP->colorComputations[1]) {
-				siP->inVectorG[currentIndex][0] = pixelPointerAt->green * cos(phasePixelPointAt->green);
-				siP->inVectorG[currentIndex][1] = pixelPointerAt->green * sin(phasePixelPointAt->green);
-			}
-			if (siP->colorComputations[2]) {
-				siP->inVectorB[currentIndex][0] = (1/pixelPointerAt->blue) * cos(phasePixelPointAt->blue);
-				siP->inVectorB[currentIndex][1] = (1/pixelPointerAt->blue) * sin(phasePixelPointAt->blue);
+			else {
+				if (siP->colorComputations[0]) {
+					siP->inVectorR[currentIndex][0] = pixelPointerAt->red * cos(phasePixelPointAt->red);
+					siP->inVectorR[currentIndex][1] = pixelPointerAt->red * sin(phasePixelPointAt->red);
+				}
+				if (siP->colorComputations[1]) {
+					siP->inVectorG[currentIndex][0] = pixelPointerAt->green * cos(phasePixelPointAt->green);
+					siP->inVectorG[currentIndex][1] = pixelPointerAt->green * sin(phasePixelPointAt->green);
+				}
+				if (siP->colorComputations[2]) {
+					siP->inVectorB[currentIndex][0] = (pixelPointerAt->blue) * cos(phasePixelPointAt->blue);
+					siP->inVectorB[currentIndex][1] = (pixelPointerAt->blue) * sin(phasePixelPointAt->blue);
+				}
 			}
 		}
 	}
@@ -207,7 +185,9 @@ vectorToPixel(
 		if (!siP->fftPhase) { // Compute the magnitude
 
 			if (siP->colorComputations[3]) {
-
+				tmpPixel.red = sqrt(pow(siP->outVectorGS[currentIndex][0], 2) + pow(siP->outVectorGS[currentIndex][1], 2));
+				tmpPixel.green = tmpPixel.red;
+				tmpPixel.blue = tmpPixel.red;
 			}
 			else {
 				if (siP->colorComputations[0]) tmpPixel.red = sqrt(pow(siP->outVectorR[currentIndex][0], 2) + pow(siP->outVectorR[currentIndex][1], 2));
@@ -216,14 +196,16 @@ vectorToPixel(
 				if (siP->colorComputations[1]) tmpPixel.green = sqrt(pow(siP->outVectorG[currentIndex][0], 2) + pow(siP->outVectorG[currentIndex][1], 2));
 				else tmpPixel.green = 0;
 
-				if (siP->colorComputations[2]) tmpPixel.blue = 1 / sqrt(pow(siP->outVectorB[currentIndex][0], 2) + pow(siP->outVectorB[currentIndex][1], 2));
+				if (siP->colorComputations[2]) tmpPixel.blue = sqrt(pow(siP->outVectorB[currentIndex][0], 2) + pow(siP->outVectorB[currentIndex][1], 2));
 				else tmpPixel.blue = 0;
 			}
 		}
 		else { // Compute the phase
 
 			if (siP->colorComputations[3]) {
-
+				tmpPixel.red = atan2(siP->outVectorGS[currentIndex][1], siP->outVectorGS[currentIndex][0]);
+				tmpPixel.green = tmpPixel.red;
+				tmpPixel.blue = tmpPixel.red;
 			}
 			else {
 				if (siP->colorComputations[0]) tmpPixel.red = atan2(siP->outVectorR[currentIndex][1], siP->outVectorR[currentIndex][0]);
@@ -239,7 +221,9 @@ vectorToPixel(
 	}
 	else { // When inverse
 		if (siP->colorComputations[3]) {
-
+			tmpPixel.red = siP->outVectorGS[currentIndex][0];
+			tmpPixel.green = siP->outVectorGS[currentIndex][0];
+			tmpPixel.blue = siP->outVectorGS[currentIndex][0];
 		}
 		else {
 			if (siP->colorComputations[0]) tmpPixel.red = siP->outVectorR[currentIndex][0];
