@@ -153,34 +153,6 @@ vectorToPixel(
 	PF_PixelFloat 	*outP);
 
 PF_Err
-fftRowsTh(
-	void *refcon,
-	A_long threadNum,
-	A_long iterationCount,
-	A_long numOfIterations);
-
-PF_Err
-fftColumnsTh(
-	void *refcon,
-	A_long threadNum,
-	A_long iterationCount,
-	A_long numOfIterations);
-
-PF_Err
-ifftRowsTh(
-	void *refcon,
-	A_long threadNum,
-	A_long iterationCount,
-	A_long numOfIterations);
-
-PF_Err
-ifftColumnsTh(
-	void *refcon,
-	A_long threadNum,
-	A_long iterationCount,
-	A_long numOfIterations);
-
-PF_Err
 fftShift(
 	void *refcon,
 	A_long threadNum,
