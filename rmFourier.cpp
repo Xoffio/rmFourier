@@ -353,17 +353,43 @@ SmartRender(
 
 						A_long imgSize = infoP->inWidth * infoP->inHeight;
 
+						fftw_plan planR, planG, planB, planGS;
+						//int a = fftw_init_threads();
+
 						// Initialize the vectors
-						infoP->imgVectorR.resize(imgSize);
-						infoP->imgVectorG.resize(imgSize);
-						infoP->imgVectorB.resize(imgSize);
-						infoP->imgVectorGS.resize(imgSize);
+						if (infoP->colorComputations[3]) {
+							infoP->inVectorGS = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * infoP->inWidth * infoP->inHeight);
+							infoP->outVectorGS = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * infoP->inWidth * infoP->inHeight);
+						}
+						else {
+							if (infoP->colorComputations[0]) {
+								infoP->inVectorR = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * infoP->inWidth * infoP->inHeight);
+								infoP->outVectorR = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * infoP->inWidth * infoP->inHeight);
+							}
+							if (infoP->colorComputations[1]) {
+								infoP->inVectorG = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * infoP->inWidth * infoP->inHeight);
+								infoP->outVectorG = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * infoP->inWidth * infoP->inHeight);
+							}
+							if (infoP->colorComputations[2]) {
+								infoP->inVectorB = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * infoP->inWidth * infoP->inHeight);
+								infoP->outVectorB = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * infoP->inWidth * infoP->inHeight);
+							}
+						}
+
+						int sign;
+						if (infoP->inverseCB) sign = FFTW_BACKWARD;
+						else sign = FFTW_FORWARD;
 
 						switch (format) {
 
 							case PF_PixelFormat_ARGB128: {
 								if (input_worldP->data && output_worldP->data) {
-									ERR(PF_PROGRESS(in_data, 1, 100));
+
+									clock_t start, end;
+									double time_taken;
+									start = clock();
+
+									//ERR(PF_PROGRESS(in_data, 1, 100));
 
 									if (infoP->inverseCB) {
 										infoP->tmp_worldP = phase_worldP;
@@ -373,53 +399,40 @@ SmartRender(
 											infoP->inHeight,
 											(void*)infoP,
 											ifftShift));
+									}
 
-										// IFFT the Rows
-										preTransform(infoP->inWidth, (void*)infoP);
-										ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
-											infoP->inHeight,//input_worldP->height,
-											(void*)infoP,
-											ifftRowsTh));
+									// Get the pixels from worldspace and fill the tmp vectors with it.
+									ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
+										infoP->inHeight,
+										(void*)infoP,
+										pixelToVector));
 
-										// IFFT the columns
-										preTransform(infoP->inHeight, (void*)infoP);
-										ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
-											infoP->inWidth, //input_worldP->width,
-											(void*)infoP,
-											ifftColumnsTh));
+									// Get max number of threads
+									//ERR(suites.IterateSuite1()->AEGP_GetNumThreads(&infoP->nMaxThreads));
+
+									//fftw_plan_with_nthreads(infoP->nMaxThreads);
+
+									// Compute FFT or IFFT
+									if (infoP->colorComputations[3]) {
+										planGS = fftw_plan_dft_2d(infoP->inHeight, infoP->inWidth, infoP->inVectorGS, infoP->outVectorGS, sign, FFTW_ESTIMATE);
+										fftw_execute(planGS);
 									}
 									else {
-
-										// Make a vector from the image pixels.
-										ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
-											infoP->inHeight,//input_worldP->height,
-											(void*)infoP,
-											pixelToVector));
-
-										ERR(PF_PROGRESS(in_data, 20, 100));
-
-										//ERR(suites.IterateSuite1()->AEGP_GetNumThreads(&infoP->nMaxThreads));
-
-										// FFT the Rows
-										preTransform(infoP->inWidth, (void*)infoP);
-										ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
-											infoP->inHeight,//input_worldP->height,
-											(void*)infoP,
-											fftRowsTh));
-
-										ERR(PF_PROGRESS(in_data, 40, 100));
-
-										// FFT the columns
-										preTransform(infoP->inHeight, (void*)infoP);
-										ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
-											infoP->inWidth, //input_worldP->width,
-											(void*)infoP,
-											fftColumnsTh));
-
-										ERR(PF_PROGRESS(in_data, 60, 100));
+										if (infoP->colorComputations[0]) {
+											planR = fftw_plan_dft_2d(infoP->inHeight, infoP->inWidth, infoP->inVectorR, infoP->outVectorR, sign, FFTW_ESTIMATE);
+											fftw_execute(planR);
+										}
+										if (infoP->colorComputations[1]) {
+											planG = fftw_plan_dft_2d(infoP->inHeight, infoP->inWidth, infoP->inVectorG, infoP->outVectorG, sign, FFTW_ESTIMATE);
+											fftw_execute(planG);
+										}
+										if (infoP->colorComputations[2]) {
+											planB = fftw_plan_dft_2d(infoP->inHeight, infoP->inWidth, infoP->inVectorB, infoP->outVectorB, sign, FFTW_ESTIMATE);
+											fftw_execute(planB);
+										}
 									}
-
-									// Put the values in the vector back to the image, also get the max in order to normalize later
+										
+									// Put the values from the vector back to the worldspace
 									ERR(suites.IterateFloatSuite1()->iterate(
 										in_data,
 										0,							// progress base
@@ -431,18 +444,47 @@ SmartRender(
 										output_worldP
 									));
 
+									// Free memory
+									if (infoP->colorComputations[3]) {
+										fftw_destroy_plan(planGS);
+										fftw_free(infoP->inVectorGS);
+										fftw_free(infoP->outVectorGS);
+									}
+									else {
+										if (infoP->colorComputations[0]) {
+											fftw_destroy_plan(planR);
+											fftw_free(infoP->inVectorR);
+											fftw_free(infoP->outVectorR);
+										}
+										if (infoP->colorComputations[1]) {
+											fftw_destroy_plan(planG);
+											fftw_free(infoP->inVectorG);
+											fftw_free(infoP->outVectorG);
+										}
+										if (infoP->colorComputations[2]) {
+											fftw_destroy_plan(planB);
+											fftw_free(infoP->inVectorB);
+											fftw_free(infoP->outVectorB);
+										}
+									}
+
+									end = clock();
+									time_taken = ((double)(end - start)) / CLOCKS_PER_SEC;
+
+									//fftw_cleanup_threads();
+
 									// If I want to get the magnitude only
 									if (!infoP->inverseCB && !infoP->fftPhase) {
 										// Normalize the image
 										/*ERR(suites.IterateFloatSuite1()->iterate(
-										in_data,
-										0,							// progress base
-										output_worldP->height,		// progress final
-										output_worldP,				// src
-										NULL,						// area - null for all pixels
-										(void*)infoP,				// custom data pointer
-										normalizeImg,				// pixel function pointer
-										output_worldP
+											in_data,
+											0,							// progress base
+											output_worldP->height,		// progress final
+											output_worldP,				// src
+											NULL,						// area - null for all pixels
+											(void*)infoP,				// custom data pointer
+											normalizeImg,				// pixel function pointer
+											output_worldP
 										));*/
 
 										// Before I do the fftshift I need to make a copy of 
@@ -462,18 +504,18 @@ SmartRender(
 											NULL,
 											NULL));
 
-										infoP->copy_worldP = &copy_worldP;	// Get the pointer 
+										infoP->copy_worldP = &copy_worldP;	// Get the pointer
 
 										// Compute the fftshift
 										ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
-											infoP->inHeight,
-											(void*)infoP,
-											fftShift));
+										infoP->inHeight,
+										(void*)infoP,
+										fftShift));
 
 										// Free memory
 										ERR(wsP->PF_DisposeWorld(in_data->effect_ref, &copy_worldP));
 									}
-
+									
 									if (infoP->inverseCB) {
 										// Normalize the image
 										ERR(suites.IterateFloatSuite1()->iterate(
