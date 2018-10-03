@@ -261,7 +261,7 @@ tmpRender16(
 	PF_Err				err = PF_Err_NONE;
 
 	AEGP_SuiteHandler suites(siP->in_data.pica_basicP);
-	//
+	
 	*outP = *inP;
 
 	return err;

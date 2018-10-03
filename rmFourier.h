@@ -33,7 +33,6 @@ typedef short int			int16;
 #include "AEGP_SuiteHandler.h"
 #include "Smart_Utils.h"
 #include "AEFX_SuiteHelper.h"
-#include "FftComplex.hpp"
 
 #include <string>
 #include <vector>
