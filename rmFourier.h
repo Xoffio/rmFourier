@@ -41,6 +41,7 @@ typedef short int			int16;
 #include <thread>
 #include <fftw3.h>
 #include <time.h>
+#include <float.h>
 
 const std::string   strName = "rmFourier",
 					strDescription = "RM skeleton for ctrl plugind";
@@ -62,6 +63,7 @@ enum {
 	RMFOURIER_INVERSE_FFT,
 	RMFOURIER_FFT_PHASE,
 	RMFOURIER_COLOR_MODE,
+	RMFOURIER_NORMALIZE,
 	RMFOURIER_NUM_PARAMS
 };
 
@@ -70,7 +72,8 @@ enum {
 	PHASE_LAYER_DISK_ID = 1,
 	INVERSE_FFT_DISK_ID,
 	FFT_PHASE_DISK_ID,
-	COLOR_MODE_DISK_ID
+	COLOR_MODE_DISK_ID,
+	NORMALIZE_DISK_ID
 };
 
 typedef struct {
@@ -95,6 +98,7 @@ typedef struct {
 										*inVectorB, *outVectorB,
 										*inVectorGS, *outVectorGS;
 	double								rMax, gMax, bMax;
+	double								normalizeVal;
 	A_long								inWidth, inHeight,
 										outWidth, outHeight;
 	A_long								nMaxThreads;

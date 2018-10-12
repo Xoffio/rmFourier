@@ -70,6 +70,9 @@ ParamsSetup (
 		1,
 		"RGB | Red | Green | Blue | Grayscale",
 		COLOR_MODE_DISK_ID);
+
+	AEFX_CLR_STRUCT(def);
+	PF_ADD_FLOAT_SLIDER("Normalize value", 0, FLT_MAX, 0, 10000, 0, 0, 2, 0, 0, NORMALIZE_DISK_ID);
 	
 	out_data->num_params = RMFOURIER_NUM_PARAMS;
 
@@ -94,6 +97,7 @@ UserChangedParam(
 			if (params[RMFOURIER_FFT_PHASE]->u.bd.value == TRUE) {
 				params[RMFOURIER_FFT_PHASE]->u.bd.value = FALSE;
 				params[RMFOURIER_FFT_PHASE]->uu.change_flags = PF_ChangeFlag_CHANGED_VALUE;
+				params[RMFOURIER_FFT_PHASE]->ui_flags &= ~PF_PUI_DISABLED;
 			}
 
 			PF_ParamDef checkout;
@@ -129,6 +133,22 @@ UserChangedParam(
 
 	return err;
 }
+
+/*static PF_Err
+UpdateParameterUI(
+	PF_InData			*in_data,
+	PF_OutData			*out_data,
+	PF_ParamDef			*params[],
+	PF_LayerDef			*outputP)
+{
+	PF_Err				err = PF_Err_NONE;
+	AEGP_SuiteHandler	suites(in_data->pica_basicP);
+
+	PF_ParamDef		param_copy[RMFOURIER_NUM_PARAMS];
+	ERR(MakeParamCopy(params, param_copy));
+
+	return err;
+}*/
 
 static PF_Err 
 Render (
@@ -274,7 +294,7 @@ SmartRender(
 						copy_worldP;
 	PF_WorldSuite2		*wsP = NULL;
 	PF_PixelFormat		format = PF_PixelFormat_INVALID;
-	PF_ParamDef			phaseLayerParam;
+	PF_ParamDef			phaseLayerParam, normParam;
 	bool				letsRender = true;
 
 	rmFourierInfo	*infoP = reinterpret_cast<rmFourierInfo*>(suites.HandleSuite1()->host_lock_handle(reinterpret_cast<PF_Handle>(extra->input->pre_render_data)));
@@ -314,12 +334,23 @@ SmartRender(
 					in_data->time_scale,
 					&phaseLayerParam));
 
+				AEFX_CLR_STRUCT(normParam);
+				ERR(PF_CHECKOUT_PARAM(
+					in_data,
+					RMFOURIER_NORMALIZE,
+					in_data->current_time,
+					in_data->time_step,
+					in_data->time_scale,
+					&normParam
+				));
+
 				infoP->ref = in_data->effect_ref;
 				infoP->samp_pb.src = input_worldP;
 				infoP->in_data = *in_data;
 				infoP->inD = in_data;
 				infoP->input_worldP = input_worldP;
 				infoP->output_worldP = output_worldP;
+				infoP->normalizeVal = normParam.u.fs_d.value;
 
 				// Checkin params
 				ERR2(PF_CHECKIN_PARAM(in_data, &phaseLayerParam));
@@ -606,6 +637,8 @@ SmartRender(
 		"Couldn't release suite."
 	));
 
+	ERR2(PF_CHECKIN_PARAM(in_data, &normParam)); // THIS MIGHT GENERATE BUGS ?
+
 	return err;
 }
 
@@ -650,6 +683,13 @@ EntryPointFunc (
 					output,
 					reinterpret_cast<const PF_UserChangedParamExtra *>(extra));
 				break;
+
+			/*case PF_Cmd_UPDATE_PARAMS_UI:
+				err = UpdateParameterUI(in_data,
+					out_data,
+					params,
+					output);
+				break;*/
 		}
 	}
 	catch(PF_Err &thrown_err){
