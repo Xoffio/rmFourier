@@ -10,7 +10,6 @@
 		7EF36FB716F29701002A3CB3 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7EF36FB616F29701002A3CB3 /* Cocoa.framework */; };
 		C56CEC781F6B155300304EE3 /* Smart_Utils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C56CEC761F6B155300304EE3 /* Smart_Utils.cpp */; };
 		C56CEC7B1F6B1DAB00304EE3 /* AEFX_SuiteHelper.c in Sources */ = {isa = PBXBuildFile; fileRef = C56CEC791F6B1DAB00304EE3 /* AEFX_SuiteHelper.c */; };
-		C5CB674D213F16E3000CD1A3 /* FftComplex.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C5CB674A213F16E3000CD1A3 /* FftComplex.cpp */; };
 		C5CB674E213F16E3000CD1A3 /* rmFourierFunctions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C5CB674C213F16E3000CD1A3 /* rmFourierFunctions.cpp */; };
 		D0FE57600993C4E900139A60 /* rmFourier.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D0FE575C0993C4E900139A60 /* rmFourier.cpp */; };
 		D0FE57610993C4E900139A60 /* SkeletonPiPL.r in Rez */ = {isa = PBXBuildFile; fileRef = D0FE575E0993C4E900139A60 /* SkeletonPiPL.r */; };
@@ -26,8 +25,6 @@
 		C56CEC771F6B155300304EE3 /* Smart_Utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Smart_Utils.h; sourceTree = "<group>"; };
 		C56CEC791F6B1DAB00304EE3 /* AEFX_SuiteHelper.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = AEFX_SuiteHelper.c; sourceTree = "<group>"; };
 		C56CEC7A1F6B1DAB00304EE3 /* AEFX_SuiteHelper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AEFX_SuiteHelper.h; sourceTree = "<group>"; };
-		C5CB674A213F16E3000CD1A3 /* FftComplex.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = FftComplex.cpp; path = ../FftComplex.cpp; sourceTree = "<group>"; };
-		C5CB674B213F16E3000CD1A3 /* FftComplex.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = FftComplex.hpp; path = ../FftComplex.hpp; sourceTree = "<group>"; };
 		C5CB674C213F16E3000CD1A3 /* rmFourierFunctions.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = rmFourierFunctions.cpp; path = ../rmFourierFunctions.cpp; sourceTree = "<group>"; };
 		D0FE575C0993C4E900139A60 /* rmFourier.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; name = rmFourier.cpp; path = ../rmFourier.cpp; sourceTree = SOURCE_ROOT; };
 		D0FE575E0993C4E900139A60 /* SkeletonPiPL.r */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.rez; name = SkeletonPiPL.r; path = ../SkeletonPiPL.r; sourceTree = SOURCE_ROOT; };
@@ -51,8 +48,6 @@
 		C4E6187C095A3C800012CA3F = {
 			isa = PBXGroup;
 			children = (
-				C5CB674A213F16E3000CD1A3 /* FftComplex.cpp */,
-				C5CB674B213F16E3000CD1A3 /* FftComplex.hpp */,
 				C5CB674C213F16E3000CD1A3 /* rmFourierFunctions.cpp */,
 				D0FE575C0993C4E900139A60 /* rmFourier.cpp */,
 				7EF36FB816F29807002A3CB3 /* rmFourier.h */,
@@ -177,7 +172,6 @@
 			files = (
 				C5CB674E213F16E3000CD1A3 /* rmFourierFunctions.cpp in Sources */,
 				D0FE57600993C4E900139A60 /* rmFourier.cpp in Sources */,
-				C5CB674D213F16E3000CD1A3 /* FftComplex.cpp in Sources */,
 				D0FE579D0993C5E500139A60 /* AEGP_SuiteHandler.cpp in Sources */,
 				C56CEC781F6B155300304EE3 /* Smart_Utils.cpp in Sources */,
 				C56CEC7B1F6B1DAB00304EE3 /* AEFX_SuiteHelper.c in Sources */,
@@ -235,6 +229,13 @@
 				GENERATE_PKGINFO_FILE = YES;
 				INFOPLIST_FILE = "Skeleton.plugin-Info.plist";
 				INSTALL_PATH = "$(HOME)/Library/Bundles";
+				LIBRARY_SEARCH_PATHS = /usr/local/lib/;
+				OTHER_CPLUSPLUSFLAGS = (
+					"$(OTHER_CFLAGS)",
+					"-I",
+					/usr/local/Cellar/fftw/3.3.8/include/,
+				);
+				"OTHER_LDFLAGS[arch=*]" = "-lfftw3";
 				PRODUCT_BUNDLE_IDENTIFIER = com.adobe.AfterEffects.Skeleton;
 				PRODUCT_NAME = rmFourier;
 				SDKROOT = macosx;
@@ -290,6 +291,14 @@
 				GENERATE_PKGINFO_FILE = YES;
 				INFOPLIST_FILE = "Skeleton.plugin-Info.plist";
 				INSTALL_PATH = "$(HOME)/Library/Bundles";
+				LIBRARY_SEARCH_PATHS = /usr/local/lib/;
+				OTHER_CPLUSPLUSFLAGS = (
+					"$(OTHER_CFLAGS)",
+					"-I",
+					/usr/local/Cellar/fftw/3.3.8/include/,
+				);
+				OTHER_LDFLAGS = "-lfftw3";
+				"OTHER_LDFLAGS[arch=*]" = "";
 				PRODUCT_BUNDLE_IDENTIFIER = com.adobe.AfterEffects.Skeleton;
 				PRODUCT_NAME = rmFourier;
 				SDKROOT = macosx;
