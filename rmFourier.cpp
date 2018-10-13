@@ -388,6 +388,9 @@ SmartRender(
 						//int a = fftw_init_threads();
 
 						// Initialize the vectors
+						infoP->preR = new double[infoP->inWidth * infoP->inHeight];
+						infoP->preG = new double[infoP->inWidth * infoP->inHeight];
+						infoP->preB = new double[infoP->inWidth * infoP->inHeight];
 						if (infoP->colorComputations[3]) {
 							infoP->inVectorGS = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * infoP->inWidth * infoP->inHeight);
 							infoP->outVectorGS = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * infoP->inWidth * infoP->inHeight);
@@ -462,7 +465,19 @@ SmartRender(
 											fftw_execute(planB);
 										}
 									}
-										
+									
+									// Calculate Magnitudes, Phases, and Maximun values
+									ERR(suites.IterateFloatSuite1()->iterate(
+										in_data,
+										0,							// progress base
+										infoP->inHeight,			// progress final
+										input_worldP,				// src
+										NULL,						// area - null for all pixels
+										(void*)infoP,				// custom data pointer
+										preVectorToPixel,				// pixel function pointer
+										output_worldP
+									));
+
 									// Put the values from the vector back to the worldspace
 									ERR(suites.IterateFloatSuite1()->iterate(
 										in_data,
@@ -476,6 +491,9 @@ SmartRender(
 									));
 
 									// Free memory
+									delete[] infoP->preR;
+									delete[] infoP->preG;
+									delete[] infoP->preB;
 									if (infoP->colorComputations[3]) {
 										fftw_destroy_plan(planGS);
 										fftw_free(infoP->inVectorGS);

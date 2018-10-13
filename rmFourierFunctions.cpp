@@ -166,7 +166,7 @@ pixelToVector(
 }
 
 PF_Err
-vectorToPixel(
+preVectorToPixel(
 	void			*refcon,
 	A_long 			xL,
 	A_long 			yL,
@@ -220,6 +220,61 @@ vectorToPixel(
 		}
 	}
 	else { // When inverse
+		/*if (siP->colorComputations[3]) {
+			tmpPixel.red = siP->outVectorGS[currentIndex][0];
+			tmpPixel.green = siP->outVectorGS[currentIndex][0];
+			tmpPixel.blue = siP->outVectorGS[currentIndex][0];
+		}
+		else {
+			if (siP->colorComputations[0]) tmpPixel.red = siP->outVectorR[currentIndex][0];
+			else tmpPixel.red = 0;
+
+			if (siP->colorComputations[1]) tmpPixel.green = siP->outVectorG[currentIndex][0];
+			else tmpPixel.green = 0;
+
+			if (siP->colorComputations[2]) tmpPixel.blue = siP->outVectorB[currentIndex][0];
+			else tmpPixel.blue = 0;
+		}*/
+	}
+
+	if (tmpPixel.red > siP->rMax) siP->rMax = tmpPixel.red;
+	if (tmpPixel.green > siP->gMax) siP->gMax = tmpPixel.green;
+	if (tmpPixel.blue > siP->bMax) siP->bMax = tmpPixel.blue;
+
+	/*outP->alpha = inP->alpha;
+	outP->red = tmpPixel.red;
+	outP->green = tmpPixel.green;
+	outP->blue = tmpPixel.blue;*/
+	
+	siP->preR[currentIndex] = tmpPixel.red;
+	siP->preG[currentIndex] = tmpPixel.green;
+	siP->preB[currentIndex] = tmpPixel.blue;
+
+	return err;
+}
+
+PF_Err
+vectorToPixel(
+	void			*refcon,
+	A_long 			xL,
+	A_long 			yL,
+	PF_PixelFloat 	*inP,
+	PF_PixelFloat 	*outP)
+{
+	register rmFourierInfo	*siP = (rmFourierInfo*)refcon;
+	PF_Err					err = PF_Err_NONE;
+	PF_PixelFloat			tmpPixel;
+
+	AEGP_SuiteHandler suites(siP->in_data.pica_basicP);
+
+	A_long currentIndex = (yL * siP->inWidth) + xL;
+
+	if (!siP->inverseCB) {
+		tmpPixel.red = siP->preR[currentIndex] / siP->rMax;
+		tmpPixel.green = siP->preG[currentIndex] / siP->gMax;
+		tmpPixel.blue = siP->preB[currentIndex] / siP->bMax;
+	}
+	else { // When inverse
 		if (siP->colorComputations[3]) {
 			tmpPixel.red = siP->outVectorGS[currentIndex][0];
 			tmpPixel.green = siP->outVectorGS[currentIndex][0];
@@ -236,10 +291,6 @@ vectorToPixel(
 			else tmpPixel.blue = 0;
 		}
 	}
-
-	if (tmpPixel.red > siP->rMax) siP->rMax = tmpPixel.red;
-	if (tmpPixel.green > siP->gMax) siP->gMax = tmpPixel.green;
-	if (tmpPixel.blue > siP->bMax) siP->bMax = tmpPixel.blue;
 
 	outP->alpha = inP->alpha;
 	outP->red	= tmpPixel.red;

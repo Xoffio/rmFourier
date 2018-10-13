@@ -97,7 +97,8 @@ typedef struct {
 										*inVectorG, *outVectorG,
 										*inVectorB, *outVectorB,
 										*inVectorGS, *outVectorGS;
-	double								rMax, gMax, bMax;
+	double								rMax, gMax, bMax, gsMax;
+	double								*preR, *preG, *preB;
 	double								normalizeVal;
 	A_long								inWidth, inHeight,
 										outWidth, outHeight;
@@ -149,6 +150,14 @@ pixelToVector(
 
 PF_Err
 vectorToPixel(
+	void			*refcon,
+	A_long 			xL,
+	A_long 			yL,
+	PF_PixelFloat 	*inP,
+	PF_PixelFloat 	*outP);
+
+PF_Err
+preVectorToPixel(
 	void			*refcon,
 	A_long 			xL,
 	A_long 			yL,
