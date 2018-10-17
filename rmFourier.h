@@ -133,7 +133,7 @@ static PF_PixelFloat
 *getXY32(PF_EffectWorld &def, int x, int y);
 
 PF_Err
-normalizeImg(
+normalizeImg32(
 	void			*refcon,
 	A_long 			xL,
 	A_long 			yL,
@@ -141,14 +141,29 @@ normalizeImg(
 	PF_PixelFloat 	*outP);
 
 PF_Err
-pixelToVector(
+normalizeImg16(
+	void			*refcon,
+	A_long 			xL,
+	A_long 			yL,
+	PF_Pixel16	 	*inP,
+	PF_Pixel16	 	*outP);
+
+PF_Err
+pixelToVector32(
 	void *refcon,
 	A_long threadNum,
 	A_long iterationCount,
 	A_long numOfIterations);
 
 PF_Err
-vectorToPixel(
+pixelToVector16(
+	void *refcon,
+	A_long threadNum,
+	A_long iterationCount,
+	A_long numOfIterations);
+
+PF_Err
+vectorToPixel32(
 	void			*refcon,
 	A_long 			xL,
 	A_long 			yL,
@@ -156,14 +171,36 @@ vectorToPixel(
 	PF_PixelFloat 	*outP);
 
 PF_Err
-fftShift(
+vectorToPixel16(
+	void			*refcon,
+	A_long 			xL,
+	A_long 			yL,
+	PF_Pixel16 		*inP,
+	PF_Pixel16	 	*outP);
+
+PF_Err
+fftShift32(
 	void *refcon,
 	A_long threadNum,
 	A_long yL,
 	A_long numOfIterations);
 
 PF_Err
-ifftShift(
+fftShift16(
+	void *refcon,
+	A_long threadNum,
+	A_long yL,
+	A_long numOfIterations);
+
+PF_Err
+ifftShift32(
+	void *refcon,
+	A_long threadNum,
+	A_long yL,
+	A_long numOfIterations);
+
+PF_Err
+ifftShift16(
 	void *refcon,
 	A_long threadNum,
 	A_long yL,
@@ -184,14 +221,5 @@ tmpRender8(
 	A_long 			yL,
 	PF_Pixel8 	*inP,
 	PF_Pixel8 	*outP);
-
-PF_Err
-pixelToVector(
-	void *refcon,
-	A_long threadNum,
-	A_long iterationCount,
-	A_long numOfIterations);
-
-void preTransform(size_t vSize, void *refcon);
 
 #endif // RMFOURIER_H

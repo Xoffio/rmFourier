@@ -411,59 +411,75 @@ SmartRender(
 						if (infoP->inverseCB) sign = FFTW_BACKWARD;
 						else sign = FFTW_FORWARD;
 
-						switch (format) {
+						if (format == PF_PixelFormat_ARGB128 || format == PF_PixelFormat_ARGB64) {
+							if (input_worldP->data && output_worldP->data) {
 
-							case PF_PixelFormat_ARGB128: {
-								if (input_worldP->data && output_worldP->data) {
+								clock_t start, end;
+								double time_taken;
+								start = clock();
 
-									clock_t start, end;
-									double time_taken;
-									start = clock();
+								//ERR(PF_PROGRESS(in_data, 1, 100));
 
-									//ERR(PF_PROGRESS(in_data, 1, 100));
+								if (infoP->inverseCB) {
+									infoP->tmp_worldP = phase_worldP;
 
-									if (infoP->inverseCB) {
-										infoP->tmp_worldP = phase_worldP;
-
-										// Compute the fftshift
+									// Compute the fftshift
+									if (format == PF_PixelFormat_ARGB128) {
 										ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
 											infoP->inHeight,
 											(void*)infoP,
-											ifftShift));
+											ifftShift32));
 									}
+									else{
+										ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
+											infoP->inHeight,
+											(void*)infoP,
+											ifftShift16));
+									}
+								}
 
-									// Get the pixels from worldspace and fill the tmp vectors with it.
+								// Get the pixels from worldspace and fill the tmp vectors with it.
+								if (format == PF_PixelFormat_ARGB128) {
 									ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
 										infoP->inHeight,
 										(void*)infoP,
-										pixelToVector));
+										pixelToVector32));
+								}
+								else {
+									ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
+										infoP->inHeight,
+										(void*)infoP,
+										pixelToVector16));
+								}
+								
 
-									// Get max number of threads
-									//ERR(suites.IterateSuite1()->AEGP_GetNumThreads(&infoP->nMaxThreads));
+								// Get max number of threads
+								//ERR(suites.IterateSuite1()->AEGP_GetNumThreads(&infoP->nMaxThreads));
 
-									//fftw_plan_with_nthreads(infoP->nMaxThreads);
+								//fftw_plan_with_nthreads(infoP->nMaxThreads);
 
-									// Compute FFT or IFFT
-									if (infoP->colorComputations[3]) {
-										planGS = fftw_plan_dft_2d(infoP->inHeight, infoP->inWidth, infoP->inVectorGS, infoP->outVectorGS, sign, FFTW_ESTIMATE);
-										fftw_execute(planGS);
+								// Compute FFT or IFFT
+								if (infoP->colorComputations[3]) {
+									planGS = fftw_plan_dft_2d(infoP->inHeight, infoP->inWidth, infoP->inVectorGS, infoP->outVectorGS, sign, FFTW_ESTIMATE);
+									fftw_execute(planGS);
+								}
+								else {
+									if (infoP->colorComputations[0]) {
+										planR = fftw_plan_dft_2d(infoP->inHeight, infoP->inWidth, infoP->inVectorR, infoP->outVectorR, sign, FFTW_ESTIMATE);
+										fftw_execute(planR);
 									}
-									else {
-										if (infoP->colorComputations[0]) {
-											planR = fftw_plan_dft_2d(infoP->inHeight, infoP->inWidth, infoP->inVectorR, infoP->outVectorR, sign, FFTW_ESTIMATE);
-											fftw_execute(planR);
-										}
-										if (infoP->colorComputations[1]) {
-											planG = fftw_plan_dft_2d(infoP->inHeight, infoP->inWidth, infoP->inVectorG, infoP->outVectorG, sign, FFTW_ESTIMATE);
-											fftw_execute(planG);
-										}
-										if (infoP->colorComputations[2]) {
-											planB = fftw_plan_dft_2d(infoP->inHeight, infoP->inWidth, infoP->inVectorB, infoP->outVectorB, sign, FFTW_ESTIMATE);
-											fftw_execute(planB);
-										}
+									if (infoP->colorComputations[1]) {
+										planG = fftw_plan_dft_2d(infoP->inHeight, infoP->inWidth, infoP->inVectorG, infoP->outVectorG, sign, FFTW_ESTIMATE);
+										fftw_execute(planG);
 									}
+									if (infoP->colorComputations[2]) {
+										planB = fftw_plan_dft_2d(infoP->inHeight, infoP->inWidth, infoP->inVectorB, infoP->outVectorB, sign, FFTW_ESTIMATE);
+										fftw_execute(planB);
+									}
+								}
 										
-									// Put the values from the vector back to the worldspace
+								// Put the values from the vector back to the worldspace
+								if (format == PF_PixelFormat_ARGB128) {
 									ERR(suites.IterateFloatSuite1()->iterate(
 										in_data,
 										0,							// progress base
@@ -471,84 +487,96 @@ SmartRender(
 										input_worldP,				// src
 										NULL,						// area - null for all pixels
 										(void*)infoP,				// custom data pointer
-										vectorToPixel,				// pixel function pointer
+										vectorToPixel32,			// pixel function pointer
 										output_worldP
 									));
+								}
+								else {
+									ERR(suites.Iterate16Suite1()->iterate(
+										in_data,
+										0,							// progress base
+										infoP->inHeight,			// progress final
+										input_worldP,				// src
+										NULL,						// area - null for all pixels
+										(void*)infoP,				// custom data pointer
+										vectorToPixel16,			// pixel function pointer
+										output_worldP
+									));
+								}
+								
 
-									// Free memory
-									if (infoP->colorComputations[3]) {
-										fftw_destroy_plan(planGS);
-										fftw_free(infoP->inVectorGS);
-										fftw_free(infoP->outVectorGS);
+								// Free memory
+								if (infoP->colorComputations[3]) {
+									fftw_destroy_plan(planGS);
+									fftw_free(infoP->inVectorGS);
+									fftw_free(infoP->outVectorGS);
+								}
+								else {
+									if (infoP->colorComputations[0]) {
+										fftw_destroy_plan(planR);
+										fftw_free(infoP->inVectorR);
+										fftw_free(infoP->outVectorR);
+									}
+									if (infoP->colorComputations[1]) {
+										fftw_destroy_plan(planG);
+										fftw_free(infoP->inVectorG);
+										fftw_free(infoP->outVectorG);
+									}
+									if (infoP->colorComputations[2]) {
+										fftw_destroy_plan(planB);
+										fftw_free(infoP->inVectorB);
+										fftw_free(infoP->outVectorB);
+									}
+								}
+
+								end = clock();
+								time_taken = ((double)(end - start)) / CLOCKS_PER_SEC;
+
+								//fftw_cleanup_threads();
+
+								// If I want to get the magnitude only
+								if (!infoP->inverseCB && !infoP->fftPhase) {
+									// Before I do the fftshift I need to make a copy of 
+									// the output world so I can compute the effect in
+									// multithread mode. (tmp solution. I might change this in the future)
+									ERR(wsP->PF_NewWorld(in_data->effect_ref,	// New world
+										infoP->inWidth,
+										infoP->inHeight,
+										NULL,
+										format,
+										&copy_worldP));
+
+									ERR(suites.WorldTransformSuite1()->copy(	// Copy the output data to the new world
+										in_data->effect_ref,
+										output_worldP,
+										&copy_worldP,
+										NULL,
+										NULL));
+
+									infoP->copy_worldP = &copy_worldP;	// Get the pointer
+
+									// Compute the fftshift
+									if (format == PF_PixelFormat_ARGB128) {
+										ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
+											infoP->inHeight,
+											(void*)infoP,
+											fftShift32));
 									}
 									else {
-										if (infoP->colorComputations[0]) {
-											fftw_destroy_plan(planR);
-											fftw_free(infoP->inVectorR);
-											fftw_free(infoP->outVectorR);
-										}
-										if (infoP->colorComputations[1]) {
-											fftw_destroy_plan(planG);
-											fftw_free(infoP->inVectorG);
-											fftw_free(infoP->outVectorG);
-										}
-										if (infoP->colorComputations[2]) {
-											fftw_destroy_plan(planB);
-											fftw_free(infoP->inVectorB);
-											fftw_free(infoP->outVectorB);
-										}
-									}
-
-									end = clock();
-									time_taken = ((double)(end - start)) / CLOCKS_PER_SEC;
-
-									//fftw_cleanup_threads();
-
-									// If I want to get the magnitude only
-									if (!infoP->inverseCB && !infoP->fftPhase) {
-										// Normalize the image
-										/*ERR(suites.IterateFloatSuite1()->iterate(
-											in_data,
-											0,							// progress base
-											output_worldP->height,		// progress final
-											output_worldP,				// src
-											NULL,						// area - null for all pixels
-											(void*)infoP,				// custom data pointer
-											normalizeImg,				// pixel function pointer
-											output_worldP
-										));*/
-
-										// Before I do the fftshift I need to make a copy of 
-										// the output world so I can compute the effect in
-										// multithread mode. (tmp solution. I might change this in the future)
-										ERR(wsP->PF_NewWorld(in_data->effect_ref,	// New world
-											infoP->inWidth,
-											infoP->inHeight,
-											NULL,
-											PF_PixelFormat_ARGB128,
-											&copy_worldP));
-
-										ERR(suites.WorldTransformSuite1()->copy(	// Copy the output data to the new world
-											in_data->effect_ref,
-											output_worldP,
-											&copy_worldP,
-											NULL,
-											NULL));
-
-										infoP->copy_worldP = &copy_worldP;	// Get the pointer
-
-										// Compute the fftshift
 										ERR(suites.IterateSuite1()->AEGP_IterateGeneric(
-										infoP->inHeight,
-										(void*)infoP,
-										fftShift));
-
-										// Free memory
-										ERR(wsP->PF_DisposeWorld(in_data->effect_ref, &copy_worldP));
+											infoP->inHeight,
+											(void*)infoP,
+											fftShift16));
 									}
 									
-									if (infoP->inverseCB) {
-										// Normalize the image
+
+									// Free memory
+									ERR(wsP->PF_DisposeWorld(in_data->effect_ref, &copy_worldP));
+								}
+									
+								if (infoP->inverseCB) {
+									// Normalize the image
+									if (format == PF_PixelFormat_ARGB128) {
 										ERR(suites.IterateFloatSuite1()->iterate(
 											in_data,
 											0,							// progress base
@@ -556,58 +584,39 @@ SmartRender(
 											output_worldP,				// src
 											NULL,						// area - null for all pixels
 											(void*)infoP,				// custom data pointer
-											normalizeImg,				// pixel function pointer
+											normalizeImg32,				// pixel function pointer
+											output_worldP
+										));
+									}
+									else {
+										ERR(suites.Iterate16Suite1()->iterate(
+											in_data,
+											0,							// progress base
+											infoP->inHeight,			// progress final
+											output_worldP,				// src
+											NULL,						// area - null for all pixels
+											(void*)infoP,				// custom data pointer
+											normalizeImg16,				// pixel function pointer
 											output_worldP
 										));
 									}
 								}
-
-								break;
 							}
-						
-
-							case PF_PixelFormat_ARGB64: {
-								infoP->inWidth = input_worldP->width; //in_data->width;
-								infoP->inHeight = input_worldP->height;//in_data->height;
-
-																	   // Circular shift
-								ERR(suites.Iterate16Suite1()->iterate(// TODO: to perfoemr faster give an area
-									in_data,
-									0,							// progress base
-									output_worldP->height,		// progress final
-									output_worldP,				// src
-									NULL,						// area - null for all pixels
-									(void*)infoP,				// custom data pointer
-									tmpRender16,				// pixel function pointer
-									output_worldP
-								));
-
-								break;
-							}
-						
-
-							case PF_PixelFormat_ARGB32: {
-								infoP->inWidth = input_worldP->width; //in_data->width;
-								infoP->inHeight = input_worldP->height;//in_data->height;
+						}
+						else if (format  == PF_PixelFormat_ARGB32) {
+							infoP->inWidth = input_worldP->width; //in_data->width;
+							infoP->inHeight = input_worldP->height;//in_data->height;
 								
-								ERR(suites.Iterate8Suite1()->iterate(
-									in_data,
-									0,							// progress base
-									output_worldP->height,		// progress final
-									input_worldP,				// src
-									NULL,						// area - null for all pixels
-									(void*)infoP,				// custom data pointer
-									tmpRender8,				// pixel function pointer
-									output_worldP
-								));
-
-								break;
-							}
-						
-
-							default:
-								err = PF_Err_BAD_CALLBACK_PARAM;
-								break;
+							ERR(suites.Iterate8Suite1()->iterate(
+								in_data,
+								0,							// progress base
+								output_worldP->height,		// progress final
+								input_worldP,				// src
+								NULL,						// area - null for all pixels
+								(void*)infoP,				// custom data pointer
+								tmpRender8,				// pixel function pointer
+								output_worldP
+							));
 						}
 					}
 				}
